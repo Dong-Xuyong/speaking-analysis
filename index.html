@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f4ef" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="Speaking analysis archive — YouTube speaking samples scored against the YouTube wiki public-speaking corpus." />
+  <title>Speaking Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="dong-ui/theme.css?v=1" />
+  <link rel="stylesheet" href="styles.css?v=1" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◇</text></svg>" />
+  <script src="dong-ui/theme.js"></script>
+</head>
+<body>
+  <div class="ink-wash" aria-hidden="true"></div>
+  <div id="app">
+    <header class="site-header">
+      <a href="#/" class="brand" id="brand-link">
+        <span class="brand-mark" aria-hidden="true">◇</span>
+        <span class="brand-text">
+          <span class="brand-name">Speaking</span>
+          <span class="brand-sub">analysis archive</span>
+        </span>
+      </a>
+      <div class="header-meta" id="header-meta"></div>
+      <button type="button" data-dong-theme-toggle aria-label="Toggle color theme"></button>
+    </header>
+
+    <main id="view-root">
+      <div id="loading" class="state-panel">Loading sessions&hellip;</div>
+    </main>
+
+    <footer class="site-footer">
+      <span>Scored with the YouTube wiki speaking OS</span>
+      <a href="https://dong-xuyong.github.io/speaking-analysis/">dong-xuyong.github.io/speaking-analysis</a>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

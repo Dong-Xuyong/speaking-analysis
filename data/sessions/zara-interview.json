@@ -1,0 +1,67 @@
+{
+  "slug": "zara-interview",
+  "title": "Zara interview",
+  "date": "2026-07-26",
+  "status": "full",
+  "summary": "8-minute self-intro for a Zara / MIS context. Instinct for 3-2-1 lists is present, but answers ramble before the point lands. Top focus: Verbal Formulation + PREP, headline-first, pause instead of restart loops.",
+  "context": "interview / self-introduction",
+  "video_id": "ZlATqknFFL8",
+  "url": "https://www.youtube.com/watch?v=ZlATqknFFL8",
+  "source_raw": "youtube-wiki/raw/ZlATqknFFL8.md",
+  "analysisHtml": "<h1>Zara interview — speaking analysis</h1>\n<p>Self-introduction (~8 min) for a Zara / management information systems context. Rubric: Structure, Delivery, Authority, and Communication Levels from the YouTube wiki speaking OS.</p>\n<h2>Verdict</h2>\n<p>You are <strong>not</strong> short on ideas. You already reach for list structure (two types of organization, two ways to handle stress) and you have a strong proof story (football referee under pressure). The gap is <strong>Verbal Formulation</strong>: speak after the endpoint is chosen, not while hunting for it. That single habit would lift Words from “pretty good instinct” toward clean PREP/3-2-1 delivery.</p>\n<h2>Structure (2/5)</h2>\n<p><strong>What works</strong></p>\n<ul>\n<li>Natural pull toward 3-2-1 / numbered categories: organization (mind vs time), stress (exposure vs habits).</li>\n<li>Closing invite for questions — good interview hygiene.</li>\n</ul>\n<p><strong>What breaks</strong></p>\n<ul>\n<li>Opening is a false start: “Hi, I will present my myself to you…” instead of a one-line identity + value.</li>\n<li>Points arrive late. The Zara automation example appears before “I’m organized” is framed as the point.</li>\n<li>Nested explanations stack until the listener loses the headline (classic content shield).</li>\n</ul>\n<p><strong>Evidence</strong></p>\n<blockquote><p>“I'm a organized person which can be good. The work organization is that two types organization that I value…”</p></blockquote>\n<p>The “two types” frame is good — but it should open the section, not appear after several unfinished automation sentences.</p>\n<p><strong>Target shape (PREP for this intro)</strong></p>\n<ol>\n<li><strong>Point:</strong> I’m Dong — MIS student focused on digital transformation; I make messy weekly work fair and clear.</li>\n<li><strong>Reason:</strong> Companies like Zara win when boring process work is automated and prioritized.</li>\n<li><strong>Example:</strong> Weekly schedule by priority so every employee gets a fair plan; referee work trained me to decide fast under pressure.</li>\n<li><strong>Point:</strong> That’s how I work — organized mind, fair systems, calm under stress.</li>\n</ol>\n<h2>Delivery (2/5)</h2>\n<p>Transcript-only signals (auto-captions):</p>\n<ul>\n<li>Restart / repair loops: priority, paperwork, “for the for the process”</li>\n<li>Unfinished clauses and mid-sentence topic jumps</li>\n<li>Little white space — ideas blur (pause foundation underused)</li>\n</ul>\n<p>Body and melody cannot be fully scored from captions. Treat Voice/Body as <strong>rookie pending re-watch</strong>; assume volume/melody need the same daily warmups as the wiki’s five vocal foundations.</p>\n<p><strong>Fix:</strong> When a restart starts, stop. Exhale. Continue from a full sentence. Silence beats a broken clause.</p>\n<h2>Authority (2/5)</h2>\n<p>Trap map from <code>five-speaking-traps</code>:</p>\n<table><thead><tr>\n<th>Trap</th>\n<th>Signal in this clip</th>\n</tr></thead><tbody>\n<tr>\n<td>Delivery blind spot</td>\n<td>Attention on content; delivery collapses into repairs</td>\n</tr>\n<tr>\n<td>Content shield</td>\n<td>Long nested explanations before a clean headline</td>\n</tr>\n<tr>\n<td>Impostor / soft openers</td>\n<td>Softening around stress identity (“I'm not a stressful person, but…”)</td>\n</tr>\n</tbody></table>\n<p><strong>What already sounds strong</strong></p>\n<blockquote><p>Referee deciding “in the right moment the fast way possible” under yelling players — that is a natural proof story. Lead with it when asked about stress; don’t bury it at the end.</p></blockquote>\n<h2>Communication levels</h2>\n<table><thead><tr>\n<th>Channel</th>\n<th>Tier</th>\n<th>Why</th>\n</tr></thead><tbody>\n<tr>\n<td>Voice</td>\n<td>Rookie</td>\n<td>Repair loops and flat density in transcript; full melody TBD on re-listen</td>\n</tr>\n<tr>\n<td>Body</td>\n<td>Rookie</td>\n<td>Not assessable from captions; default until video review</td>\n</tr>\n<tr>\n<td>Words</td>\n<td>Pretty good</td>\n<td>Framework instinct (lists, story) without clean filters yet</td>\n</tr>\n</tbody></table>\n<h2>Focus next (priority order)</h2>\n<ol>\n<li><strong>Verbal Formulation → PREP / 3-2-1</strong> — 3-second pause, endpoint, then speak. Wiki: verbal formulation, prep-framework, 321-framework.</li>\n<li><strong>Headline first</strong> — one sentence idea, one sentence support. Wiki: five-speaking-traps, message-density, simple-language-speaking.</li>\n<li><strong>Pause over restarts</strong> — read-aloud + voice notes; count restarts per take. Wiki: delivery-habits, five-vocal-foundations, voice-note-practice.</li>\n</ol>\n<h2>Rewritten 45-second intro (model)</h2>\n<blockquote><p>My name is Dong. I study management information systems with a focus on digital transformation. At a company like Zara, that means automating boring process work and scheduling by priority so every employee gets a fair week. I’m organized in two ways: I plan the week by what matters most, and I keep daily systems simple so tasks don’t pile up. I handle stress the same way I referee football — decide fast under pressure, then recover with habits like training and music. I’m happy to go deeper on any part of that.</p></blockquote>\n<p>Practice that script aloud until it is boring. Then answer follow-ups with PREP only.</p>",
+  "scores": {
+    "layers": {
+      "structure": {
+        "score": 2,
+        "note": "Instinct for numbered lists (two organization types, two stress types) but no endpoint-first Verbal Formulation. Points arrive mid-stream after false starts."
+      },
+      "delivery": {
+        "score": 2,
+        "note": "Transcript shows restart loops, word repeats (priority / paperwork), and unfinished clauses. Pause and message density are the main levers; audio melody not scored from captions alone."
+      },
+      "authority": {
+        "score": 2,
+        "note": "Content-shield pattern: long explanations bury the headline. Softening lines and mid-thought hedging undercut certainty even when ideas are good (referee stress story)."
+      }
+    },
+    "levels": {
+      "voice": "rookie",
+      "body": "rookie",
+      "words": "pretty good"
+    }
+  },
+  "focus_next": [
+    {
+      "title": "Verbal Formulation before every answer",
+      "why": "You already reach for 3-2-1 (two types / two ways) but start speaking before the endpoint is clear, so lists collapse into restarts.",
+      "drill": "Silent 3-second pause. Decide: endpoint sentence → PREP or 3-2-1 → speak. Practice on 5 common interview prompts as voice notes.",
+      "concepts": [
+        "verbal-formulation",
+        "prep-framework",
+        "321-framework",
+        "three-second-pause"
+      ]
+    },
+    {
+      "title": "Headline first, then one support sentence",
+      "why": "Organization and stress answers bury the point under nested explanations (content shield). Listeners must decode.",
+      "drill": "Rewrite your Zara intro as: (1) who you are in one sentence, (2) one MIS example for Zara in one sentence, (3) one proof. Record once; cut anything that is not those three lines.",
+      "concepts": [
+        "five-speaking-traps",
+        "message-density",
+        "simple-language-speaking"
+      ]
+    },
+    {
+      "title": "Replace restart loops with a pause",
+      "why": "Repeats like priority / paperwork and aborted clauses burn credibility more than silence would.",
+      "drill": "Daily 5-minute read-aloud: when you feel a restart coming, stop, breathe out, continue from the next full sentence. Track filler/restart count per take.",
+      "concepts": [
+        "delivery-habits",
+        "voice-note-practice",
+        "read-aloud-practice",
+        "five-vocal-foundations"
+      ]
+    }
+  ]
+}
