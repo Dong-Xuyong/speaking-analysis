@@ -123,6 +123,36 @@
       </section>`;
   }
 
+  function renderTopFixes(topFixes) {
+    const items = Array.isArray(topFixes) ? topFixes : [];
+    if (items.length === 0) return "";
+    const lis = items
+      .map((item, i) => {
+        const rank = item.rank || i + 1;
+        const fix = item.fix || "";
+        const problem = item.problem || "";
+        const instead = item.instead || "";
+        const drill = item.drill || "";
+        return `
+          <li class="focus-card">
+            <span class="focus-num">${String(rank).padStart(2, "0")}</span>
+            <div class="focus-body">
+              <h3>${escapeHtml(fix)}</h3>
+              ${problem ? `<p class="focus-why">${escapeHtml(problem)}</p>` : ""}
+              ${instead ? `<p class="focus-drill"><strong>Instead:</strong> ${escapeHtml(instead)}</p>` : ""}
+              ${drill ? `<p class="focus-why">${escapeHtml(drill)}</p>` : ""}
+            </div>
+          </li>`;
+      })
+      .join("");
+    return `
+      <section class="focus-block">
+        <p class="section-label">Top fixes</p>
+        <h2>Highest-leverage changes</h2>
+        <ol class="focus-list">${lis}</ol>
+      </section>`;
+  }
+
   function renderFocus(focusNext) {
     const items = Array.isArray(focusNext) ? focusNext : [];
     if (items.length === 0) return "";
@@ -327,6 +357,7 @@
         </header>
 
         ${renderScores(session.scores)}
+        ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
         ${renderFocus(session.focus_next || session.scores?.focus_next)}
 
         <section class="synthesis">

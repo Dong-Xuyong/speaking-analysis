@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-26T12:03:09Z",
+  "generated": "2026-07-26T12:16:50Z",
   "sessionCount": 1,
   "sessions": [
     {
@@ -7,12 +7,12 @@
       "title": "Zara interview",
       "date": "2026-07-26",
       "status": "full",
-      "summary": "8-minute self-intro for a Zara / MIS context. Instinct for 3-2-1 lists is present, but answers ramble before the point lands. Top focus: Verbal Formulation + PREP, headline-first, pause instead of restart loops.",
+      "summary": "8-minute Zara/MIS self-intro. Instinct for 3-2-1 is present; needs Verbal Formulation, grammar cleanup, headline-first, and a CCC→PREP→HILO→3-2-1 perfect script. Top fix: pause → endpoint → speak.",
       "context": "interview / self-introduction",
       "video_id": "ZlATqknFFL8",
       "focusPreview": [
         "Verbal Formulation before every answer",
-        "Headline first, then one support sentence"
+        "Headline first (kill content shield)"
       ]
     }
   ]
