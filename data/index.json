@@ -1,7 +1,20 @@
 {
-  "generated": "2026-07-26T12:16:50Z",
-  "sessionCount": 1,
+  "generated": "2026-07-27T11:50:52Z",
+  "sessionCount": 2,
   "sessions": [
+    {
+      "slug": "zara-interview-2",
+      "title": "Zara interview 2",
+      "date": "2026-07-27",
+      "status": "full",
+      "summary": "Second Zara self-intro (~6 min). vs interview 1: shorter and more self-aware about pace, but structure/authority did not improve — lost the referee proof and the Zara ops link. Scores stay 2/2/2. Top fix: restore headline-first + one strong proof.",
+      "context": "interview / self-introduction",
+      "video_id": "O-hcFKEKxmw",
+      "focusPreview": [
+        "Restore headline + Zara value in one sentence",
+        "Bring back one clean proof story"
+      ]
+    },
     {
       "slug": "zara-interview",
       "title": "Zara interview",
