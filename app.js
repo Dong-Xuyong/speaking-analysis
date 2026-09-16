@@ -75,14 +75,54 @@
     });
   }
 
-  function updateHeaderMeta(catalog) {
-    if (!catalog) {
-      headerMeta.textContent = "";
-      return;
-    }
-    const count = catalog.sessionCount ?? (catalog.sessions || []).length;
-    const gen = catalog.generated ? formatDate(catalog.generated) : "—";
-    headerMeta.innerHTML = `${count} session${count === 1 ? "" : "s"} · updated ${gen}`;
+  function updateHeaderMeta(text) {
+    headerMeta.textContent = text || "";
+  }
+
+  function catalogStats(catalog) {
+    const sessions = Array.isArray(catalog.sessions) ? catalog.sessions : [];
+    const count = catalog.sessionCount ?? sessions.length;
+    const full = sessions.filter((s) => (s.status || "full").toLowerCase() !== "provisional").length;
+    const gen = catalog.generated
+      ? new Date(catalog.generated).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+      : "—";
+    return { sessions, count, full, gen };
+  }
+
+  function renderHero(catalog, lede) {
+    const { count, full, gen } = catalogStats(catalog);
+    return `
+      <section class="learning-hero" aria-labelledby="learning-title">
+        <div class="hero-topline">
+          <span class="eyebrow">Speaking archive</span>
+        </div>
+        <h2 id="learning-title">Speaking analysis</h2>
+        <p>${escapeHtml(lede)}</p>
+        <div class="status-stats">
+          <div>
+            <strong>${count}</strong>
+            <span>Session${count === 1 ? "" : "s"}</span>
+          </div>
+          <div>
+            <strong>${full}</strong>
+            <span>Full</span>
+          </div>
+          <div>
+            <strong>${escapeHtml(gen)}</strong>
+            <span>Updated</span>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function sectionHead(eyebrow, title) {
+    return `
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">${escapeHtml(eyebrow)}</span>
+          <h2>${escapeHtml(title)}</h2>
+        </div>
+      </div>`;
   }
 
   function scoreBar(label, value, max = 5) {
@@ -118,7 +158,7 @@
       .join("");
     return `
       <section class="levels-block">
-        <p class="section-label">Communication levels</p>
+        ${sectionHead("Communication levels", "Voice, body, words")}
         <div class="level-grid">${cells}</div>
       </section>`;
   }
@@ -147,8 +187,7 @@
       .join("");
     return `
       <section class="focus-block">
-        <p class="section-label">Top fixes</p>
-        <h2>Highest-leverage changes</h2>
+        ${sectionHead("Top fixes", "Highest-leverage changes")}
         <ol class="focus-list">${lis}</ol>
       </section>`;
   }
@@ -179,8 +218,7 @@
       .join("");
     return `
       <section class="focus-block">
-        <p class="section-label">Focus next</p>
-        <h2>Practice priorities</h2>
+        ${sectionHead("Focus next", "Practice priorities")}
         <ol class="focus-list">${lis}</ol>
       </section>`;
   }
@@ -207,11 +245,11 @@
 
     return `
       <section class="scores-block">
-        <p class="section-label">Rubric scores</p>
+        ${sectionHead("Rubric scores", "Structure, delivery, authority")}
         <div class="score-bars">${bars}</div>
         ${notes ? `<ul class="score-notes">${notes}</ul>` : ""}
-        ${renderLevels(scores.levels)}
-      </section>`;
+      </section>
+      ${renderLevels(scores.levels)}`;
   }
 
   function youtubeEmbed(videoId) {
@@ -241,8 +279,9 @@
   }
 
   function renderCatalog(catalog, query) {
-    const sessions = Array.isArray(catalog.sessions) ? catalog.sessions : [];
-    updateHeaderMeta(catalog);
+    const { sessions } = catalogStats(catalog);
+    updateHeaderMeta("");
+    root.classList.remove("is-detail");
 
     const q = (query || "").trim().toLowerCase();
     const filtered = q
@@ -259,13 +298,16 @@
       String(b.date || "").localeCompare(String(a.date || ""))
     );
 
+    const hero = renderHero(
+      catalog,
+      "Interview and talk samples scored with Structure, Delivery, Authority, and Communication Levels from your wiki."
+    );
+
     if (sessions.length === 0) {
       root.innerHTML = `
-        <section class="catalog-hero">
-          <h1>Speaking analysis</h1>
-          <p>YouTube speaking samples scored against your wiki communication OS.</p>
-        </section>
+        ${hero}
         <div class="empty-archive">
+          <span class="eyebrow">Sessions</span>
           <h2>No sessions yet</h2>
           <p>Run <code>python scripts/sync_speaking_analysis.py</code> after adding a session.</p>
         </div>
@@ -274,8 +316,7 @@
     }
 
     const cards = sorted
-      .map((s, i) => {
-        const delay = Math.min(i * 0.03, 0.35);
+      .map((s) => {
         const focus0 =
           Array.isArray(s.focusPreview) && s.focusPreview[0]
             ? `<p class="summary">Next: ${escapeHtml(s.focusPreview[0])}</p>`
@@ -284,7 +325,7 @@
               : "";
         return `
         <li>
-          <a class="report-card" href="#/session/${encodeURIComponent(s.slug)}" style="animation-delay:${delay}s">
+          <a class="ui-card report-card" href="#/session/${encodeURIComponent(s.slug)}">
             <div class="report-card-top">
               <span class="report-card-meta">${escapeHtml(formatDate(s.date))}</span>
               ${statusBadge(s.status)}
@@ -298,10 +339,7 @@
       .join("");
 
     root.innerHTML = `
-      <section class="catalog-hero">
-        <h1>Speaking analysis</h1>
-        <p>Interview and talk samples scored with Structure, Delivery, Authority, and Communication Levels from your wiki.</p>
-      </section>
+      ${hero}
       <div class="search-row">
         <input
           type="search"
@@ -333,7 +371,8 @@
   }
 
   function renderSession(session) {
-    headerMeta.textContent = session.context || session.date || "";
+    updateHeaderMeta(session.context || session.date || "");
+    root.classList.add("is-detail");
     const hint = overallHint(session);
 
     root.innerHTML = `
@@ -341,6 +380,7 @@
       <article class="report-view">
         <header class="report-hero">
           ${youtubeEmbed(session.video_id)}
+          <span class="eyebrow">${escapeHtml(session.context || "Speaking session")}</span>
           <div class="report-kicker">
             ${statusBadge(session.status)}
             <span class="date">${escapeHtml(formatDate(session.date))}</span>
@@ -361,7 +401,7 @@
         ${renderFocus(session.focus_next || session.scores?.focus_next)}
 
         <section class="synthesis">
-          <p class="section-label">Analysis</p>
+          ${sectionHead("Analysis", "Full coaching notes")}
           <div class="synthesis-body">${session.analysisHtml || "<p>No analysis available.</p>"}</div>
         </section>
       </article>
@@ -370,13 +410,14 @@
 
   async function showHome() {
     setLoading("Loading sessions…");
+    root.classList.remove("is-detail");
     try {
       const catalog = await loadCatalog();
       renderCatalog(catalog, "");
     } catch (err) {
       console.error(err);
       setError("Could not load data/index.json. Is the archive synced?");
-      headerMeta.textContent = "";
+      updateHeaderMeta("");
     }
   }
 
@@ -388,7 +429,8 @@
     } catch (err) {
       console.error(err);
       setError(`Session “${slug}” not found.`);
-      headerMeta.textContent = "";
+      updateHeaderMeta("");
+      root.classList.remove("is-detail");
     }
   }
 

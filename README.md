@@ -14,7 +14,7 @@ python -m http.server 8765
 
 ## Add a session
 
-1. Fetch transcript: `python transcript.py <youtube-url>`
+1. Fetch transcript: `python youtube-app/transcript.py <youtube-url>`
 2. Create `sessions/<slug>/analysis.md`, `meta.json`, `scores.json` (use the `speaking-analysis` Cursor skill)
 3. Sync: `python scripts/sync_speaking_analysis.py`
 
