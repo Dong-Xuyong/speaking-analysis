@@ -1,7 +1,8 @@
 /**
- * Speaking Analysis — static SPA shell
+ * Speaking Coach Analysis — static SPA shell
  * Hash routes: #/  |  #/session/<slug>
  * Data: data/index.json, data/sessions/<slug>.json
+ * Practice state: localStorage key speaking-coach-practice (see coach.js)
  */
 
 (function () {
@@ -9,8 +10,13 @@
 
   const root = document.getElementById("view-root");
   const headerMeta = document.getElementById("header-meta");
+  const APP_NAME = "Speaking Coach Analysis";
 
   let catalogCache = null;
+  let detailCache = new Map();
+  let loadedSessions = [];
+  let homeQuery = "";
+  let chartSeriesId = "all";
 
   const TIER_RANK = { rookie: 1, "pretty good": 2, natural: 3 };
 
@@ -66,13 +72,29 @@
 
   function formatDate(iso) {
     if (!iso) return "";
-    const d = new Date(iso);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
+    const d = match
+      ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+      : new Date(iso);
     if (Number.isNaN(d.getTime())) return escapeHtml(iso);
     return d.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
+  }
+
+  function shortDate(iso) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+    if (!match) return "";
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function formatScore(n) {
+    if (n == null || !Number.isFinite(n)) return "—";
+    const rounded = Math.round(n * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
   }
 
   function updateHeaderMeta(text) {
@@ -96,7 +118,7 @@
         <div class="hero-topline">
           <span class="eyebrow">Speaking archive</span>
         </div>
-        <h2 id="learning-title">Speaking analysis</h2>
+        <h1 id="learning-title">${escapeHtml(APP_NAME)}</h1>
         <p>${escapeHtml(lede)}</p>
         <div class="status-stats">
           <div>
@@ -278,6 +300,443 @@
     return "natural-leaning";
   }
 
+  function coachApi() {
+    return window.SpeakingCoach || null;
+  }
+
+  function tipButton(id, label) {
+    return `<button type="button" class="info-tip" aria-expanded="false" aria-controls="${escapeHtml(id)}" aria-label="Wiki source for ${escapeHtml(label)}">ⓘ</button>`;
+  }
+
+  function tipPop(id, why, sources) {
+    const cites = (sources || [])
+      .map(
+        (src) => `
+        <li class="tip-cite">
+          <span class="tip-title">${escapeHtml(src.title)}</span>
+          <code>${escapeHtml(src.path)}</code>
+        </li>`
+      )
+      .join("");
+    return `
+      <div class="tip-pop" id="${escapeHtml(id)}" role="note" hidden>
+        <p class="tip-why">${escapeHtml(why)}</p>
+        <ul class="tip-cites">${cites}</ul>
+      </div>`;
+  }
+
+  function chartSeries(agg) {
+    const Coach = coachApi();
+    const points = agg.timeline.filter((p) => p.date);
+    const series = [
+      {
+        id: "overall",
+        label: "Overall",
+        scale: "score",
+        values: points.map((p) => p.overall),
+      },
+    ];
+    (Coach ? Coach.SKILLS : []).forEach((skill) => {
+      series.push({
+        id: skill.id,
+        label: skill.label,
+        scale: "score",
+        values: points.map((p) => (p.skills ? p.skills[skill.id] : null)),
+      });
+    });
+    if (points.some((p) => p.wpm != null)) {
+      series.push({
+        id: "wpm",
+        label: "Pace (WPM)",
+        scale: "auto",
+        values: points.map((p) => p.wpm),
+      });
+    }
+    if (points.some((p) => p.fillerRate != null)) {
+      series.push({
+        id: "fillerRate",
+        label: "Filler rate",
+        scale: "auto",
+        values: points.map((p) => p.fillerRate),
+      });
+    }
+    return { points, series };
+  }
+
+  function activeSeries(pack) {
+    if (chartSeriesId === "all") {
+      return pack.series.filter((s) => s.scale === "score" && s.values.some((v) => v != null));
+    }
+    const one = pack.series.find((s) => s.id === chartSeriesId);
+    return one ? [one] : pack.series.slice(0, 1);
+  }
+
+  function renderLineChart(pack) {
+    const shown = activeSeries(pack);
+    const dates = pack.points.map((p) => p.date);
+    if (!dates.length || !shown.length || !shown.some((s) => s.values.some((v) => v != null))) {
+      return `<p class="chart-empty">No scored sessions yet. A voice memo with no transcript or scores still counts toward the streak.</p>`;
+    }
+
+    const w = 360;
+    const h = 188;
+    const pad = { l: 34, r: 12, t: 14, b: 32 };
+    const innerW = w - pad.l - pad.r;
+    const innerH = h - pad.t - pad.b;
+    const times = dates.map((d) => {
+      const parts = d.split("-").map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+    });
+    const t0 = Math.min.apply(null, times);
+    const t1 = Math.max.apply(null, times);
+    const xAt = (i) =>
+      t1 === t0 ? pad.l + innerW / 2 : pad.l + (innerW * (times[i] - t0)) / (t1 - t0);
+
+    const auto = shown.some((s) => s.scale === "auto");
+    let yMin = 0;
+    let yMax = 5;
+    if (auto) {
+      const vals = shown.flatMap((s) => s.values.filter((v) => v != null && Number.isFinite(v)));
+      yMin = Math.min.apply(null, vals);
+      yMax = Math.max.apply(null, vals);
+      if (yMin === yMax) {
+        yMin -= 1;
+        yMax += 1;
+      }
+      const span = yMax - yMin || 1;
+      yMin -= span * 0.15;
+      yMax += span * 0.15;
+    }
+    const yAt = (v) => pad.t + innerH * (1 - (v - yMin) / (yMax - yMin || 1));
+
+    const gridVals = auto ? [yMin, (yMin + yMax) / 2, yMax] : [0, 2.5, 5];
+    const grid = gridVals
+      .map((v) => {
+        const y = yAt(v);
+        const label = auto ? (Math.round(v * 10) / 10).toString() : String(v);
+        return `
+          <line class="grid" x1="${pad.l}" y1="${y}" x2="${w - pad.r}" y2="${y}"></line>
+          <text class="axis" x="${pad.l - 6}" y="${y + 3}" text-anchor="end">${escapeHtml(label)}</text>`;
+      })
+      .join("");
+
+    const lines = shown
+      .map((series) => {
+        const segs = [];
+        let cur = [];
+        series.values.forEach((v, i) => {
+          if (v == null || !Number.isFinite(v)) {
+            if (cur.length) segs.push(cur);
+            cur = [];
+          } else {
+            cur.push(i);
+          }
+        });
+        if (cur.length) segs.push(cur);
+        const polys = segs
+          .map((seg) => {
+            const pts = seg.map((i) => `${xAt(i).toFixed(1)},${yAt(series.values[i]).toFixed(1)}`).join(" ");
+            return `<polyline class="chart-line s-${escapeHtml(series.id)}" pathLength="1" points="${pts}"></polyline>`;
+          })
+          .join("");
+        const dots = series.values
+          .map((v, i) => {
+            if (v == null || !Number.isFinite(v)) return "";
+            return `<circle class="chart-dot s-${escapeHtml(series.id)}" cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3.5"><title>${escapeHtml(series.label)} ${escapeHtml(formatScore(v))} · ${escapeHtml(shortDate(dates[i]))}</title></circle>`;
+          })
+          .join("");
+        return polys + dots;
+      })
+      .join("");
+
+    const labelIdx = dates.length <= 4 ? dates.map((_, i) => i) : [0, dates.length - 1];
+    const xLabels = labelIdx
+      .map((i) => {
+        const anchor = i === 0 ? "start" : i === dates.length - 1 ? "end" : "middle";
+        const x = i === 0 ? pad.l : i === dates.length - 1 ? w - pad.r : xAt(i);
+        return `<text class="axis x" x="${x}" y="${h - 8}" text-anchor="${anchor}">${escapeHtml(shortDate(dates[i]))}</text>`;
+      })
+      .join("");
+
+    const summary = shown
+      .map((s) => {
+        const vals = s.values.filter((v) => v != null);
+        if (!vals.length) return "";
+        return `${s.label} ${formatScore(vals[vals.length - 1])}`;
+      })
+      .filter(Boolean)
+      .join(", ");
+
+    return `
+      <svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Progress chart. ${escapeHtml(summary)}">
+        ${grid}
+        ${lines}
+        ${xLabels}
+      </svg>`;
+  }
+
+  function chartCaption(agg, pack) {
+    const scored = agg.timeline.filter((p) => p.scored);
+    if (!scored.length) {
+      return "Audio-only memos count toward the streak. Scores show up here after a session is analysed.";
+    }
+    const hasWpm = agg.timeline.some((p) => p.wpm != null);
+    const hasFiller = agg.timeline.some((p) => p.fillerRate != null);
+    const missing = [];
+    if (!hasWpm) missing.push("pace in words per minute");
+    if (!hasFiller) missing.push("filler-word rate");
+    const tail = missing.length
+      ? ` ${missing[0].charAt(0).toUpperCase()}${missing.join(" and ").slice(1)} will plot when a session records them. Until then, pace and filler words follow the delivery score.`
+      : "";
+    const shown = activeSeries(pack);
+    const focus = shown[0];
+    let delta = "";
+    if (focus && chartSeriesId !== "all") {
+      const vals = focus.values.filter((v) => v != null && Number.isFinite(v));
+      if (vals.length >= 2) {
+        const change = Math.round((vals[vals.length - 1] - vals[0]) * 10) / 10;
+        const sign = change > 0 ? "+" : "";
+        delta = ` ${focus.label} ${sign}${change} from the first scored session.`;
+      }
+    }
+    return `Overall averages structure, delivery, and authority. Clarity blends structure with the words tier; vocal follows the voice tier; storytelling blends authority with the words tier.${tail}${delta}`;
+  }
+
+  function renderChartCard(agg) {
+    const pack = chartSeries(agg);
+    const chips = [{ id: "all", label: "All" }]
+      .concat(pack.series.map((s) => ({ id: s.id, label: s.label })))
+      .map((chip) => {
+        const pressed = chip.id === chartSeriesId ? "true" : "false";
+        return `<button type="button" class="chart-chip" data-chart="${escapeHtml(chip.id)}" aria-pressed="${pressed}">${escapeHtml(chip.label)}</button>`;
+      })
+      .join("");
+    return `
+      <section class="chart-card" aria-labelledby="chart-title">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Progress</span>
+            <h2 id="chart-title">Scores over time</h2>
+          </div>
+        </div>
+        <div class="chart-chips" role="group" aria-label="Chart metric">${chips}</div>
+        <div class="chart-frame">${renderLineChart(pack)}</div>
+        <ul class="chart-legend">
+          ${activeSeries(pack)
+            .map(
+              (s) =>
+                `<li><span class="swatch s-${escapeHtml(s.id)}" aria-hidden="true"></span>${escapeHtml(s.label)}</li>`
+            )
+            .join("")}
+        </ul>
+        <p class="chart-note">${escapeHtml(chartCaption(agg, pack))}</p>
+      </section>`;
+  }
+
+  function renderSkillCards(summary) {
+    const cards = summary
+      .map((skill) => {
+        const pct = skill.avg == null ? 0 : Math.max(0, Math.min(100, (skill.avg / 5) * 100));
+        const tier = skill.tier || "unscored";
+        return `
+          <article class="skill-card" data-skill="${escapeHtml(skill.id)}">
+            <div class="skill-card-top">
+              <h3>${escapeHtml(skill.label)}</h3>
+              ${tipButton("tip-skill-" + skill.id, skill.label)}
+            </div>
+            <p class="skill-tier ${tierClass(tier)}">${escapeHtml(tier)}</p>
+            <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
+            <p class="skill-meta">${escapeHtml(formatScore(skill.avg))} avg · ${skill.samples} session${skill.samples === 1 ? "" : "s"}</p>
+            <p class="skill-hint">${escapeHtml(skill.hint)}</p>
+            ${tipPop("tip-skill-" + skill.id, skill.why, skill.sources)}
+          </article>`;
+      })
+      .join("");
+    return cards;
+  }
+
+  function renderBadges(badges, mechanic) {
+    const items = badges
+      .map((badge) => {
+        const state = badge.earned ? "is-earned" : "is-locked";
+        return `
+          <li class="badge-item ${state}">
+            <div class="badge-copy">
+              <strong>${escapeHtml(badge.label)}</strong>
+              <span>${escapeHtml(badge.detail)}</span>
+            </div>
+            ${tipButton("tip-badge-" + badge.id, badge.label)}
+            ${tipPop("tip-badge-" + badge.id, badge.why, badge.sources)}
+          </li>`;
+      })
+      .join("");
+    return `
+      <section class="badges-block" aria-labelledby="badges-title">
+        <div class="tip-wrap">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Habits logged</span>
+              <h2 id="badges-title">Badges</h2>
+            </div>
+            ${tipButton("tip-badges", mechanic.label)}
+          </div>
+          ${tipPop("tip-badges", mechanic.why, mechanic.sources)}
+        </div>
+        <ul class="badge-list">${items}</ul>
+      </section>`;
+  }
+
+  function renderCoach(sessions) {
+    const Coach = coachApi();
+    if (!Coach) return "";
+    const today = Coach.todayIso();
+    const state = Coach.loadState();
+    const collected = Coach.collectPracticeDays(sessions, state);
+    const streak = Coach.currentStreak(collected.days, today);
+    const best = Coach.bestStreak(collected.days);
+    const logged = Object.keys(collected.days).length;
+    const windowCount = Coach.countInWindow(collected.days, today, 21);
+    const audioDays = Object.keys(collected.audioDays);
+    const audioWindow = Coach.maxInAnyWindow(collected.audioDays, 7);
+    const agg = Coach.aggregate(sessions);
+    const week = Coach.challengeForDate(today);
+    const challenge = week.challenge;
+    const challengeOn = Coach.challengeDone(state, week.week.id, challenge.id);
+    const practisedToday = !!collected.days[today];
+    const dots = Coach.lastDays(today, 7)
+      .map((iso) => {
+        const on = collected.days[iso] ? " is-on" : "";
+        const now = iso === today ? " is-today" : "";
+        return `
+          <li>
+            <span class="day-dot${on}${now}" title="${escapeHtml(iso)}"></span>
+            <span class="day-label">${escapeHtml(Coach.weekdayInitial(iso))}</span>
+          </li>`;
+      })
+      .join("");
+    const monday = (() => {
+      const parts = today.split("-").map(Number);
+      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+      const day = dt.getDay() || 7;
+      dt.setDate(dt.getDate() - day + 1);
+      return Coach.todayIso(dt);
+    })();
+    const sunday = Coach.addDays(monday, 6);
+    const tiers = agg.summary.map((s) => s.tier).filter(Boolean);
+    const badges = Coach.evaluateBadges({
+      audioDayCount: audioDays.length,
+      audioWindow: audioWindow,
+      practiceDayCount: logged,
+      completed: Coach.completedChallengeIds(state),
+      tiers: tiers,
+    });
+    const checkLabel = practisedToday ? "Practised today" : "I practised today";
+
+    return `
+      <section class="coach-panel" id="coach-panel" aria-label="Practice">
+        <article class="streak-card">
+          <div class="tip-wrap">
+            <div class="streak-head">
+              <div>
+                <span class="eyebrow">Daily rep · while you drive</span>
+                <p class="streak-figure" aria-live="polite">
+                  <strong>${streak}</strong>
+                  <span>day streak</span>
+                </p>
+              </div>
+              ${tipButton("tip-streak", Coach.MECHANICS.streak.label)}
+            </div>
+            ${tipPop("tip-streak", Coach.MECHANICS.streak.why, Coach.MECHANICS.streak.sources)}
+          </div>
+          <p class="streak-lede">Two minutes, hands-free. A tap or a memo with no transcript or scores keeps the chain.</p>
+          <ol class="week-dots" aria-label="Last seven days">${dots}</ol>
+          <button type="button" class="checkin-btn${practisedToday ? " is-done" : ""}" data-checkin aria-pressed="${practisedToday ? "true" : "false"}">${escapeHtml(checkLabel)}</button>
+          <div class="streak-stats">
+            <div><strong>${best}</strong><span>Best</span></div>
+            <div><strong>${logged}</strong><span>Days logged</span></div>
+            <div><strong>${windowCount}/21</strong><span>This window</span></div>
+          </div>
+          <div class="install-line">
+            <span>${windowCount} of the last 21 days</span>
+            ${tipButton("tip-install", Coach.MECHANICS.install.label)}
+          </div>
+          ${tipPop("tip-install", Coach.MECHANICS.install.why, Coach.MECHANICS.install.sources)}
+        </article>
+
+        ${renderChartCard(agg)}
+
+        <article class="challenge-card">
+          <div class="tip-wrap">
+            <div class="challenge-head">
+              <div>
+                <span class="eyebrow">This week · ${escapeHtml(shortDate(monday))} – ${escapeHtml(shortDate(sunday))}</span>
+                <h2>${escapeHtml(challenge.label)}</h2>
+              </div>
+              ${tipButton("tip-challenge", challenge.label)}
+            </div>
+            ${tipPop("tip-challenge", challenge.why, challenge.sources)}
+          </div>
+          <p class="challenge-detail">${escapeHtml(challenge.detail)}</p>
+          <button
+            type="button"
+            class="challenge-btn${challengeOn ? " is-done" : ""}"
+            data-challenge="${escapeHtml(challenge.id)}"
+            data-week="${escapeHtml(week.week.id)}"
+            aria-pressed="${challengeOn ? "true" : "false"}"
+          >${challengeOn ? "Logged for this week" : "I did this in my reps"}</button>
+        </article>
+
+        <section class="skills-block" aria-labelledby="skills-title">
+          <div class="tip-wrap">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">From every scored session</span>
+                <h2 id="skills-title">Skill levels</h2>
+              </div>
+              ${tipButton("tip-levels", Coach.MECHANICS.levels.label)}
+            </div>
+            ${tipPop("tip-levels", Coach.MECHANICS.levels.why, Coach.MECHANICS.levels.sources)}
+          </div>
+          <div class="skill-grid">${renderSkillCards(agg.summary)}</div>
+        </section>
+
+        ${renderBadges(badges, Coach.MECHANICS.badges)}
+      </section>`;
+  }
+
+  function renderSessionSkills(session) {
+    const Coach = coachApi();
+    if (!Coach) return "";
+    const derived = Coach.deriveSession(session);
+    if (!derived || !derived.scored) {
+      return `
+        <section class="scores-block session-skills">
+          ${sectionHead("This take", "No scores on this memo")}
+          <p class="chart-note">A session with no transcript or scores still counts as a practice day.</p>
+        </section>`;
+    }
+    const rows = Coach.SKILLS.map((skill) => {
+      const value = derived.skills[skill.id];
+      const tier = Coach.tierFromScore(value) || "—";
+      const pct = value == null ? 0 : Math.max(0, Math.min(100, (value / 5) * 100));
+      return `
+        <div class="score-row">
+          <span class="score-label">${escapeHtml(skill.label)}</span>
+          <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
+          <span class="score-num">${escapeHtml(formatScore(value))} · ${escapeHtml(tier)}</span>
+        </div>`;
+    }).join("");
+    const extras = [];
+    if (derived.wpm != null) extras.push(`Pace ${derived.wpm} WPM`);
+    if (derived.fillerRate != null) extras.push(`Filler rate ${derived.fillerRate}`);
+    return `
+      <section class="scores-block session-skills">
+        ${sectionHead("This session", "Six skills")}
+        <div class="score-bars">${rows}</div>
+        ${extras.length ? `<p class="chart-note">${escapeHtml(extras.join(" · "))}</p>` : ""}
+      </section>`;
+  }
+
   function renderCatalog(catalog, query) {
     const { sessions } = catalogStats(catalog);
     updateHeaderMeta("");
@@ -300,18 +759,25 @@
 
     const hero = renderHero(
       catalog,
-      "Interview and talk samples scored with Structure, Delivery, Authority, and Communication Levels from your wiki."
+      "Interview and talk samples, skill levels, and a two-minute driving practice streak."
     );
+
+    const coach = renderCoach(loadedSessions);
+    const scrollY = window.scrollY;
+    const hadSearchFocus =
+      document.activeElement && document.activeElement.id === "catalog-search";
 
     if (sessions.length === 0) {
       root.innerHTML = `
         ${hero}
+        ${coach}
         <div class="empty-archive">
           <span class="eyebrow">Sessions</span>
           <h2>No sessions yet</h2>
           <p>Run <code>python scripts/sync_speaking_analysis.py</code> after adding a session.</p>
         </div>
       `;
+      if (scrollY) window.scrollTo(0, scrollY);
       return;
     }
 
@@ -340,6 +806,13 @@
 
     root.innerHTML = `
       ${hero}
+      ${coach}
+      <div class="section-heading sessions-heading">
+        <div>
+          <span class="eyebrow">Archive</span>
+          <h2>Sessions</h2>
+        </div>
+      </div>
       <div class="search-row">
         <input
           type="search"
@@ -361,13 +834,17 @@
 
     const input = document.getElementById("catalog-search");
     if (input) {
-      input.focus({ preventScroll: true });
-      const caret = input.value.length;
-      input.setSelectionRange(caret, caret);
       input.addEventListener("input", () => {
-        renderCatalog(catalog, input.value);
+        homeQuery = input.value;
+        renderCatalog(catalog, homeQuery);
       });
+      if (hadSearchFocus) {
+        input.focus({ preventScroll: true });
+        const caret = input.value.length;
+        input.setSelectionRange(caret, caret);
+      }
     }
+    if (scrollY) window.scrollTo(0, scrollY);
   }
 
   function renderSession(session) {
@@ -397,6 +874,7 @@
         </header>
 
         ${renderScores(session.scores)}
+        ${renderSessionSkills(session)}
         ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
         ${renderFocus(session.focus_next || session.scores?.focus_next)}
 
@@ -408,12 +886,36 @@
     `;
   }
 
+  async function loadAllSessions(catalog) {
+    const metas = Array.isArray(catalog.sessions) ? catalog.sessions : [];
+    return Promise.all(
+      metas.map(async (meta) => {
+        const slug = meta && meta.slug;
+        if (!slug) return meta;
+        const cached = detailCache.get(slug);
+        if (cached && !cached._detailMissing) return Object.assign({}, meta, cached);
+        try {
+          const full = await fetchJson(`data/sessions/${encodeURIComponent(slug)}.json`);
+          const merged = Object.assign({}, meta, full);
+          detailCache.set(slug, merged);
+          return merged;
+        } catch (err) {
+          console.error(err);
+          const fallback = Object.assign({}, meta, { _detailMissing: true });
+          detailCache.set(slug, fallback);
+          return fallback;
+        }
+      })
+    );
+  }
+
   async function showHome() {
     setLoading("Loading sessions…");
     root.classList.remove("is-detail");
     try {
       const catalog = await loadCatalog();
-      renderCatalog(catalog, "");
+      loadedSessions = await loadAllSessions(catalog);
+      renderCatalog(catalog, homeQuery);
     } catch (err) {
       console.error(err);
       setError("Could not load data/index.json. Is the archive synced?");
@@ -425,6 +927,8 @@
     setLoading("Loading session…");
     try {
       const session = await fetchJson(`data/sessions/${encodeURIComponent(slug)}.json`);
+      detailCache.set(slug, session);
+      document.title = `${session.title || slug} · ${APP_NAME}`;
       renderSession(session);
     } catch (err) {
       console.error(err);
@@ -434,10 +938,95 @@
     }
   }
 
+  function closeTips() {
+    document.querySelectorAll(".tip-pop").forEach((pop) => {
+      pop.hidden = true;
+    });
+    document.querySelectorAll(".info-tip").forEach((btn) => {
+      btn.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function toggleTip(btn) {
+    const pop = document.getElementById(btn.getAttribute("aria-controls"));
+    if (!pop) return;
+    const willOpen = pop.hidden;
+    closeTips();
+    if (willOpen) {
+      pop.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  function rerenderHome() {
+    if (!catalogCache) return;
+    const input = document.getElementById("catalog-search");
+    if (input) homeQuery = input.value;
+    renderCatalog(catalogCache, homeQuery);
+  }
+
+  document.addEventListener("click", (event) => {
+    const tip = event.target.closest(".info-tip");
+    if (tip) {
+      event.preventDefault();
+      toggleTip(tip);
+      return;
+    }
+    if (event.target.closest(".tip-pop")) return;
+
+    const checkin = event.target.closest("[data-checkin]");
+    const challenge = event.target.closest("[data-challenge]");
+    const chart = event.target.closest("[data-chart]");
+    if (!checkin && !challenge && !chart) {
+      closeTips();
+      return;
+    }
+    closeTips();
+    const Coach = coachApi();
+    if (!Coach || !catalogCache) return;
+
+    if (chart) {
+      chartSeriesId = chart.getAttribute("data-chart") || "all";
+      rerenderHome();
+      return;
+    }
+
+    if (checkin) {
+      const today = Coach.todayIso();
+      const state = Coach.loadState();
+      const fromSessions = Coach.collectPracticeDays(loadedSessions, {
+        v: 1,
+        checkins: [],
+        challenges: {},
+      });
+      const sessionToday = !!fromSessions.days[today];
+      const hasCheckin = state.checkins.indexOf(today) !== -1;
+      const next =
+        hasCheckin && !sessionToday
+          ? Coach.withCheckin(state, today, false)
+          : Coach.withCheckin(state, today, true);
+      Coach.saveState(next);
+      rerenderHome();
+      return;
+    }
+
+    if (challenge) {
+      const id = challenge.getAttribute("data-challenge");
+      const weekId = challenge.getAttribute("data-week");
+      const state = Coach.loadState();
+      const done = !Coach.challengeDone(state, weekId, id);
+      Coach.saveState(Coach.withChallenge(state, weekId, id, done));
+      rerenderHome();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeTips();
+  });
+
   async function route() {
     const r = parseRoute();
-    document.title =
-      r.name === "session" ? `${r.slug} · Speaking Coach Analysis` : "Speaking Coach Analysis";
+    document.title = r.name === "session" ? `${r.slug} · ${APP_NAME}` : APP_NAME;
 
     if (r.name === "session") {
       await showSession(r.slug);

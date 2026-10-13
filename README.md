@@ -1,4 +1,4 @@
-# Speaking Analysis
+# Speaking Coach Analysis
 
 GitHub Pages archive of YouTube speaking samples scored against the YouTube wiki public-speaking corpus (Vinh Giang OS: Structure / Delivery / Authority / Communication Levels).
 
