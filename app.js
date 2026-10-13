@@ -437,7 +437,7 @@
   async function route() {
     const r = parseRoute();
     document.title =
-      r.name === "session" ? `${r.slug} · Speaking Analysis` : "Speaking Analysis";
+      r.name === "session" ? `${r.slug} · Speaking Coach Analysis` : "Speaking Coach Analysis";
 
     if (r.name === "session") {
       await showSession(r.slug);
