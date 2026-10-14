@@ -558,7 +558,7 @@
         const tier = missing ? "not recorded" : skill.tier || "—";
         const tierCss = missing ? "tier-unscored" : tierClass(skill.tier);
         const meta = missing
-          ? "not recorded"
+          ? ""
           : `${formatScore(skill.avg)} avg · ${skill.samples} session${skill.samples === 1 ? "" : "s"}`;
         const parts = (skill.parts || [])
           .map((part) => {
@@ -580,7 +580,7 @@
             </div>
             <p class="skill-tier ${tierCss}">${escapeHtml(tier)}</p>
             <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
-            <p class="skill-meta">${escapeHtml(meta)}</p>
+            ${meta ? `<p class="skill-meta">${escapeHtml(meta)}</p>` : ""}
             ${parts}
             <p class="skill-hint">${escapeHtml(skill.hint)}</p>
             ${tipPop("tip-skill-" + skill.id, skill.why, skill.sources)}
