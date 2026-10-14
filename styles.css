@@ -1469,3 +1469,12 @@ html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Daily rep audio prompts */
+.daily-rep { max-width: var(--max); margin: 1.5rem auto; padding: 1rem 0.95rem 1.05rem; box-sizing: border-box; }
+.daily-rep h2 { margin: 0 0 0.6rem; }
+.rep-item h3 { margin: 0.2rem 0 0.25rem; }
+.rep-meta { color: var(--text-mute); font-size: 0.9rem; margin: 0 0 0.6rem; }
+.rep-item audio { width: 100%; }
+.rep-item a { color: var(--teal); }
+.rep-transcript { color: var(--text-dim); line-height: 1.55; }
