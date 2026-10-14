@@ -343,6 +343,16 @@
         scale: "score",
         values: points.map((p) => (p.skills ? p.skills[skill.id] : null)),
       });
+      if (skill.id === "vocal") {
+        (Coach.VOCAL_PARTS || []).forEach((part) => {
+          series.push({
+            id: part.id,
+            label: part.label,
+            scale: "score",
+            values: points.map((p) => (p.subs ? p.subs[part.id] : null)),
+          });
+        });
+      }
     });
     if (points.some((p) => p.wpm != null)) {
       series.push({
@@ -375,6 +385,10 @@
     const shown = activeSeries(pack);
     const dates = pack.points.map((p) => p.date);
     if (!dates.length || !shown.length || !shown.some((s) => s.values.some((v) => v != null))) {
+      const focused = shown.length === 1 ? shown[0] : null;
+      if (focused && (focused.id === "volume" || focused.id === "endingPitch" || focused.id === "vocal")) {
+        return `<p class="chart-empty">${escapeHtml(focused.label)} is not recorded on these sessions.</p>`;
+      }
       return `<p class="chart-empty">No scored sessions yet. A voice memo with no transcript or scores still counts toward the streak.</p>`;
     }
 
@@ -499,7 +513,10 @@
         delta = ` ${focus.label} ${sign}${change} from the first scored session.`;
       }
     }
-    return `Overall averages structure, delivery, and authority. Clarity blends structure with the words tier; vocal follows the voice tier; storytelling blends authority with the words tier.${tail}${delta}`;
+    const vocalNote = agg.timeline.some((p) => p.subs && (p.subs.volume != null || p.subs.endingPitch != null))
+      ? ""
+      : " Volume and ending pitch are not recorded on these sessions.";
+    return `Overall averages structure, delivery, and authority. Clarity blends structure with the words tier; vocal delivery averages the volume and ending-pitch scores that were recorded; storytelling blends authority with the words tier.${vocalNote}${tail}${delta}`;
   }
 
   function renderChartCard(agg) {
@@ -536,17 +553,35 @@
   function renderSkillCards(summary) {
     const cards = summary
       .map((skill) => {
-        const pct = skill.avg == null ? 0 : Math.max(0, Math.min(100, (skill.avg / 5) * 100));
-        const tier = skill.tier || "unscored";
+        const missing = skill.avg == null;
+        const pct = missing ? 0 : Math.max(0, Math.min(100, (skill.avg / 5) * 100));
+        const tier = missing ? "not recorded" : skill.tier || "—";
+        const tierCss = missing ? "tier-unscored" : tierClass(skill.tier);
+        const meta = missing
+          ? "not recorded"
+          : `${formatScore(skill.avg)} avg · ${skill.samples} session${skill.samples === 1 ? "" : "s"}`;
+        const parts = (skill.parts || [])
+          .map((part) => {
+            const partText = part.avg == null ? "not recorded" : `${formatScore(part.avg)} · ${part.tier}`;
+            return `
+              <p class="skill-sub">
+                <span>${escapeHtml(part.label)}</span>
+                <span>${escapeHtml(partText)}</span>
+                ${tipButton("tip-part-" + part.id, part.label)}
+              </p>
+              ${tipPop("tip-part-" + part.id, part.why, part.sources)}`;
+          })
+          .join("");
         return `
           <article class="skill-card" data-skill="${escapeHtml(skill.id)}">
             <div class="skill-card-top">
               <h3>${escapeHtml(skill.label)}</h3>
               ${tipButton("tip-skill-" + skill.id, skill.label)}
             </div>
-            <p class="skill-tier ${tierClass(tier)}">${escapeHtml(tier)}</p>
+            <p class="skill-tier ${tierCss}">${escapeHtml(tier)}</p>
             <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
-            <p class="skill-meta">${escapeHtml(formatScore(skill.avg))} avg · ${skill.samples} session${skill.samples === 1 ? "" : "s"}</p>
+            <p class="skill-meta">${escapeHtml(meta)}</p>
+            ${parts}
             <p class="skill-hint">${escapeHtml(skill.hint)}</p>
             ${tipPop("tip-skill-" + skill.id, skill.why, skill.sources)}
           </article>`;
@@ -628,8 +663,16 @@
       audioWindow: audioWindow,
       practiceDayCount: logged,
       completed: Coach.completedChallengeIds(state),
+      pauseRestartClean: Coach.whiteSpaceEarned(state, sessions),
       tiers: tiers,
     });
+    const weekRestarts = challenge.id === "pause-restart" ? Coach.restartsInWeek(sessions, week.week.id) : null;
+    const restartLine =
+      challenge.id === "pause-restart"
+        ? weekRestarts == null
+          ? "Restarts this week: not recorded. Each repeated opening is a miss."
+          : `Restarts this week: ${weekRestarts}. Each one is a miss.`
+        : "";
     const checkLabel = practisedToday ? "Practised today" : "I practised today";
 
     return `
@@ -677,6 +720,7 @@
             ${tipPop("tip-challenge", challenge.why, challenge.sources)}
           </div>
           <p class="challenge-detail">${escapeHtml(challenge.detail)}</p>
+          ${restartLine ? `<p class="restart-line">${escapeHtml(restartLine)}</p>` : ""}
           <button
             type="button"
             class="challenge-btn${challengeOn ? " is-done" : ""}"
@@ -704,27 +748,68 @@
       </section>`;
   }
 
+  function renderRestartBlock(session) {
+    const Coach = coachApi();
+    const info = Coach.restartInfo(session);
+    const count = info.count == null ? "not recorded" : String(info.count);
+    const source = info.source ? ` · ${info.source}` : "";
+    return `
+      <p class="restart-line">Restarts: ${escapeHtml(count)}${escapeHtml(source)}</p>
+      <p class="chart-note">Each repeated opening is a miss on Pause, don't restart.</p>`;
+  }
+
+  function renderVocalSubs(derived) {
+    const Coach = coachApi();
+    return (Coach.VOCAL_PARTS || [])
+      .map((part) => {
+        const value = derived.subs ? derived.subs[part.id] : null;
+        const missing = value == null;
+        const pct = missing ? 0 : Math.max(0, Math.min(100, (value / 5) * 100));
+        const num = missing ? "not recorded" : `${formatScore(value)} · ${Coach.tierFromScore(value)}`;
+        return `
+          <div class="vocal-sub">
+            <div class="score-row score-sub">
+              <span class="score-label">${escapeHtml(part.label)} ${tipButton("tip-session-" + part.id, part.label)}</span>
+              <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
+              <span class="score-num${missing ? " is-missing" : ""}">${escapeHtml(num)}</span>
+            </div>
+            ${tipPop("tip-session-" + part.id, part.why, part.sources)}
+          </div>`;
+      })
+      .join("");
+  }
+
   function renderSessionSkills(session) {
     const Coach = coachApi();
     if (!Coach) return "";
     const derived = Coach.deriveSession(session);
+    const restarts = renderRestartBlock(session);
     if (!derived || !derived.scored) {
       return `
         <section class="scores-block session-skills">
           ${sectionHead("This take", "No scores on this memo")}
           <p class="chart-note">A session with no transcript or scores still counts as a practice day.</p>
+          ${restarts}
         </section>`;
     }
     const rows = Coach.SKILLS.map((skill) => {
       const value = derived.skills[skill.id];
-      const tier = Coach.tierFromScore(value) || "—";
-      const pct = value == null ? 0 : Math.max(0, Math.min(100, (value / 5) * 100));
+      const missing = value == null;
+      const tier = missing ? "" : Coach.tierFromScore(value) || "—";
+      const pct = missing ? 0 : Math.max(0, Math.min(100, (value / 5) * 100));
+      const num = missing
+        ? skill.id === "vocal"
+          ? "not recorded"
+          : "— · —"
+        : `${formatScore(value)} · ${tier}`;
+      const subs = skill.id === "vocal" ? renderVocalSubs(derived) : "";
       return `
         <div class="score-row">
           <span class="score-label">${escapeHtml(skill.label)}</span>
           <div class="score-track" aria-hidden="true"><div class="score-fill" style="width:${pct}%"></div></div>
-          <span class="score-num">${escapeHtml(formatScore(value))} · ${escapeHtml(tier)}</span>
-        </div>`;
+          <span class="score-num${missing && skill.id === "vocal" ? " is-missing" : ""}">${escapeHtml(num)}</span>
+        </div>
+        ${subs}`;
     }).join("");
     const extras = [];
     if (derived.wpm != null) extras.push(`Pace ${derived.wpm} WPM`);
@@ -734,6 +819,7 @@
         ${sectionHead("This session", "Six skills")}
         <div class="score-bars">${rows}</div>
         ${extras.length ? `<p class="chart-note">${escapeHtml(extras.join(" · "))}</p>` : ""}
+        ${restarts}
       </section>`;
   }
 

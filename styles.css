@@ -1205,6 +1205,8 @@ html.dark .chart-chip[aria-pressed="true"] {
 .s-fillers { stroke: #a13d30; background: #a13d30; fill: #a13d30; }
 .s-structure { stroke: #1e4d8c; background: #1e4d8c; fill: #1e4d8c; }
 .s-vocal { stroke: #6d28d9; background: #6d28d9; fill: #6d28d9; }
+.s-volume { stroke: #7c3aed; background: #7c3aed; fill: #7c3aed; }
+.s-endingPitch { stroke: #c026d3; background: #c026d3; fill: #c026d3; }
 .s-storytelling { stroke: #0f6b4c; background: #0f6b4c; fill: #0f6b4c; }
 .s-wpm { stroke: #b45309; background: #b45309; fill: #b45309; }
 .s-fillerRate { stroke: #a13d30; background: #a13d30; fill: #a13d30; }
@@ -1215,6 +1217,8 @@ html.dark .s-pace { stroke: #fbbf24; background: #fbbf24; fill: #fbbf24; }
 html.dark .s-fillers { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
 html.dark .s-structure { stroke: #93c5fd; background: #93c5fd; fill: #93c5fd; }
 html.dark .s-vocal { stroke: #d8b4fe; background: #d8b4fe; fill: #d8b4fe; }
+html.dark .s-volume { stroke: #c4b5fd; background: #c4b5fd; fill: #c4b5fd; }
+html.dark .s-endingPitch { stroke: #f0abfc; background: #f0abfc; fill: #f0abfc; }
 html.dark .s-storytelling { stroke: #86efac; background: #86efac; fill: #86efac; }
 html.dark .s-wpm { stroke: #fbbf24; background: #fbbf24; fill: #fbbf24; }
 html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
@@ -1246,7 +1250,10 @@ html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
 .skill-card[data-skill="pace"] { --skill-color: #b45309; }
 .skill-card[data-skill="fillers"] { --skill-color: #a13d30; }
 .skill-card[data-skill="structure"] { --skill-color: #1e4d8c; }
-.skill-card[data-skill="vocal"] { --skill-color: #6d28d9; }
+.skill-card[data-skill="vocal"] {
+  --skill-color: #6d28d9;
+  grid-column: 1 / -1;
+}
 .skill-card[data-skill="storytelling"] { --skill-color: #0f6b4c; }
 
 .skill-card h3 {
@@ -1265,6 +1272,52 @@ html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
 .skill-tier.tier-rookie { color: var(--danger-soft); }
 .skill-tier.tier-pretty { color: var(--amber); }
 .skill-tier.tier-natural { color: var(--teal); }
+.skill-tier.tier-unscored { color: var(--text-mute); text-transform: none; }
+
+.skill-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.skill-sub span:nth-child(2) {
+  margin-left: auto;
+}
+
+.vocal-sub {
+  margin: -0.15rem 0 0.1rem 0.55rem;
+}
+
+.score-sub {
+  grid-template-columns: minmax(6.2rem, max-content) 1fr auto;
+}
+
+.score-sub .score-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.score-sub .info-tip,
+.skill-sub .info-tip {
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.score-num.is-missing {
+  color: var(--text-mute);
+  font-weight: 500;
+}
+
+.restart-line {
+  margin: 0.45rem 0 0;
+  font-size: 0.88rem;
+}
 
 .skill-meta,
 .skill-hint {
