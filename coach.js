@@ -80,7 +80,7 @@
       id: "vocal",
       label: "Vocal delivery",
       hint: "Volume and ending pitch.",
-      why: "Healthy volume (closer to a 5 than a 3) is felt conviction, and a falling pitch on a full stop beats uptalk or a fade.",
+      why: "The score shown is the average of the volume and ending-pitch sub-scores that were recorded. A missing sub-score is left out.",
       sources: [SOURCES.vocal, SOURCES.delivery],
     },
     {
@@ -89,6 +89,23 @@
       hint: "A story or analogy, then the point.",
       why: "Natural communicators layer stories and analogies on a framework so listeners feel the point.",
       sources: [SOURCES.levels],
+    },
+  ];
+
+  var VOCAL_PARTS = [
+    {
+      id: "volume",
+      label: "Volume",
+      hint: "Steady through the sentence, not a fade.",
+      why: "Healthy volume stays steady to the end of the sentence; a small voice or a fade is heard as small ideas.",
+      sources: [SOURCES.vocal],
+    },
+    {
+      id: "endingPitch",
+      label: "Ending pitch",
+      hint: "Statements land downward.",
+      why: "A statement lands on a full stop and a lower pitch. A rise at the end is uptalk.",
+      sources: [SOURCES.delivery],
     },
   ];
 
@@ -103,8 +120,8 @@
     {
       id: "pause-restart",
       label: "Pause, don't restart",
-      detail: "When you lose the thread, pause instead of restarting the sentence.",
-      why: "Finish the thought you started; a pause holds it, and restarting throws it away.",
+      detail: "When you lose the thread, pause instead of restarting the sentence. A repeated opening counts as a miss.",
+      why: "Finish one thought, then pause. Repeating the opening of the sentence is a miss.",
       sources: [SOURCES.habits9],
     },
     {
@@ -315,6 +332,217 @@
     return null;
   }
 
+  function parseScore(raw) {
+    if (typeof raw !== "string" && typeof raw !== "number") return null;
+    if (typeof raw === "string" && /[a-z]/i.test(raw)) {
+      var tier = tierToScore(raw);
+      if (tier != null) return tier;
+    }
+    var n = Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 5) return null;
+    return n;
+  }
+
+  function scoreBags(session) {
+    var scores = session && session.scores;
+    return [
+      session && session.metrics,
+      scores && scores.skills,
+      scores && scores.vocal,
+      scores && scores.delivery,
+      scores,
+      session,
+    ];
+  }
+
+  function readScore(session, keys) {
+    var bags = scoreBags(session);
+    for (var b = 0; b < bags.length; b++) {
+      var bag = bags[b];
+      if (!bag || typeof bag !== "object" || Array.isArray(bag)) continue;
+      for (var i = 0; i < keys.length; i++) {
+        if (!Object.prototype.hasOwnProperty.call(bag, keys[i])) continue;
+        var parsed = parseScore(bag[keys[i]]);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
+  }
+
+  var VOLUME_KEYS = ["volume", "volumeScore", "volume_score", "vocalVolume", "vocal_volume"];
+  var PITCH_KEYS = [
+    "endingPitch",
+    "ending_pitch",
+    "endingPitchScore",
+    "pitch",
+    "intonation",
+    "intonationScore",
+    "pitchScore",
+  ];
+  var UPSPEAK_KEYS = ["upspeak", "uptalk", "upspeakScore", "uptalkScore"];
+
+  function vocalParts(session) {
+    var volume = readScore(session, VOLUME_KEYS);
+    var endingPitch = readScore(session, PITCH_KEYS);
+    if (endingPitch == null) {
+      var upspeak = readScore(session, UPSPEAK_KEYS);
+      if (upspeak != null) endingPitch = 5 - upspeak;
+    }
+    return {
+      volume: volume,
+      endingPitch: endingPitch,
+    };
+  }
+
+  function readCount(raw) {
+    if (raw == null || raw === "") return null;
+    if (Array.isArray(raw)) return raw.length;
+    if (typeof raw === "object") {
+      if (raw.count == null || raw.count === "") return null;
+      var counted = Number(raw.count);
+      return Number.isFinite(counted) && counted >= 0 ? counted : null;
+    }
+    if (typeof raw !== "string" && typeof raw !== "number") return null;
+    var n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  function readRestartField(session) {
+    var keys = ["restarts", "restartCount", "restart_count"];
+    var bags = scoreBags(session);
+    for (var b = 0; b < bags.length; b++) {
+      var bag = bags[b];
+      if (!bag || typeof bag !== "object" || Array.isArray(bag)) continue;
+      for (var i = 0; i < keys.length; i++) {
+        if (!Object.prototype.hasOwnProperty.call(bag, keys[i])) continue;
+        var n = readCount(bag[keys[i]]);
+        if (n != null) return n;
+      }
+    }
+    return null;
+  }
+
+  var RESTART_WORD = "[A-Za-z][A-Za-z']*";
+
+  function openingRestart(sentence) {
+    var s = String(sentence || "").replace(/^[\s"'“”‘’(\[\]«»]+/, "");
+    if (!s) return null;
+    var dash = new RegExp(
+      "^((?:" + RESTART_WORD + ")(?:\\s+" + RESTART_WORD + "){0,3})\\s*[-–—]\\s*\\1\\b",
+      "i"
+    );
+    var dashed = s.match(dash);
+    if (dashed) return dashed[1].toLowerCase().replace(/\s+/g, " ");
+    var doubled = new RegExp(
+      "^((?:" + RESTART_WORD + ")(?:\\s+" + RESTART_WORD + "){0,2})\\s+\\1\\b",
+      "i"
+    );
+    var match = s.match(doubled);
+    return match ? match[1].toLowerCase().replace(/\s+/g, " ") : null;
+  }
+
+  function countRestartsInText(text) {
+    var n = 0;
+    String(text || "")
+      .split(/[\n.!?]+/)
+      .forEach(function (part) {
+        if (openingRestart(part)) n += 1;
+      });
+    return n;
+  }
+
+  function decodeEntities(value) {
+    return String(value)
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">");
+  }
+
+  function analysisExcerpts(html) {
+    if (typeof html !== "string" || !html.trim()) return [];
+    var out = [];
+    var block = /<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi;
+    var found;
+    while ((found = block.exec(html))) {
+      var text = decodeEntities(found[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+      if (text) out.push(text);
+    }
+    var rest = html.replace(/<blockquote\b[^>]*>[\s\S]*?<\/blockquote>/gi, " ");
+    var quoted = /[“"]([^”"]{2,240})[”"]/g;
+    while ((found = quoted.exec(rest))) {
+      var quote = decodeEntities(found[1]).replace(/\s+/g, " ").trim();
+      if (quote) out.push(quote);
+    }
+    return out;
+  }
+
+  function countRestartsInExcerpts(excerpts) {
+    var seen = {};
+    var n = 0;
+    (excerpts || []).forEach(function (text) {
+      String(text)
+        .split(/[\n.!?]+/)
+        .forEach(function (part) {
+          var phrase = openingRestart(part);
+          if (!phrase || seen[phrase]) return;
+          seen[phrase] = true;
+          n += 1;
+        });
+    });
+    return n;
+  }
+
+  function transcriptBody(session) {
+    var keys = ["transcript", "transcriptText", "captions"];
+    for (var i = 0; i < keys.length; i++) {
+      var value = session && session[keys[i]];
+      if (typeof value === "string" && value.trim()) return value;
+    }
+    return null;
+  }
+
+  function restartInfo(session) {
+    if (!session) return { count: null, source: null };
+    var field = readRestartField(session);
+    if (field != null) return { count: field, source: "restarts field" };
+    var transcript = transcriptBody(session);
+    if (transcript != null) {
+      return { count: countRestartsInText(transcript), source: "transcript" };
+    }
+    var excerpts = analysisExcerpts(session.analysisHtml);
+    if (!excerpts.length) return { count: null, source: null };
+    return { count: countRestartsInExcerpts(excerpts), source: "quoted speech in this analysis" };
+  }
+
+  function restartsInWeek(sessions, weekId) {
+    var total = 0;
+    var any = false;
+    (sessions || []).forEach(function (session) {
+      var date = practiceDate(session);
+      if (!date || isoWeekId(date).id !== weekId) return;
+      var info = restartInfo(session);
+      if (info.count == null) return;
+      any = true;
+      total += info.count;
+    });
+    return any ? total : null;
+  }
+
+  function whiteSpaceEarned(state, sessions) {
+    var challenges = (state && state.challenges) || {};
+    var keys = Object.keys(challenges);
+    for (var i = 0; i < keys.length; i++) {
+      var entry = challenges[keys[i]];
+      if (!entry || !entry.done || entry.id !== "pause-restart") continue;
+      var misses = restartsInWeek(sessions || [], keys[i]);
+      if (!(misses > 0)) return true;
+    }
+    return false;
+  }
+
   function textBlob(session) {
     if (!session) return "";
     var parts = [session.transcript, session.transcriptText, session.analysisHtml, session.captions];
@@ -366,8 +594,8 @@
     var delivery = layerScore(session, "delivery");
     var authority = layerScore(session, "authority");
     var levels = (session.scores && session.scores.levels) || {};
-    var voice = tierToScore(levels.voice);
     var words = tierToScore(levels.words);
+    var parts = vocalParts(session);
 
     var wpm = readMetric(session, ["wpm", "wordsPerMinute", "paceWpm", "pace_wpm"]);
     var fillerRate = readMetric(session, [
@@ -382,7 +610,7 @@
       pace: explicitSkill(session, "pace") != null ? explicitSkill(session, "pace") : delivery,
       fillers: explicitSkill(session, "fillers") != null ? explicitSkill(session, "fillers") : delivery,
       structure: explicitSkill(session, "structure") != null ? explicitSkill(session, "structure") : structure,
-      vocal: explicitSkill(session, "vocal") != null ? explicitSkill(session, "vocal") : voice,
+      vocal: mean([parts.volume, parts.endingPitch]),
       storytelling:
         explicitSkill(session, "storytelling") != null
           ? explicitSkill(session, "storytelling")
@@ -393,28 +621,24 @@
     var anySkill = SKILLS.some(function (sk) {
       return skills[sk.id] != null;
     });
-    if (overall == null && !anySkill && wpm == null && fillerRate == null) {
-      return {
-        slug: session.slug || "",
-        title: session.title || session.slug || "",
-        date: practiceDate(session),
-        overall: null,
-        skills: skills,
-        wpm: null,
-        fillerRate: null,
-        scored: false,
-      };
-    }
-    return {
+    var base = {
       slug: session.slug || "",
       title: session.title || session.slug || "",
       date: practiceDate(session),
       overall: overall,
       skills: skills,
+      subs: parts,
+      restarts: restartInfo(session),
       wpm: wpm,
       fillerRate: fillerRate,
-      scored: overall != null || anySkill,
     };
+    if (overall == null && !anySkill && wpm == null && fillerRate == null) {
+      base.scored = false;
+      base.overall = null;
+      return base;
+    }
+    base.scored = overall != null || anySkill;
+    return base;
   }
 
   function aggregate(sessions) {
@@ -429,6 +653,7 @@
     SKILLS.forEach(function (sk) {
       buckets[sk.id] = [];
     });
+    var partBuckets = { volume: [], endingPitch: [] };
     var overalls = [];
     list.forEach(function (session) {
       var derived = deriveSession(session);
@@ -440,11 +665,15 @@
         var v = derived.skills[sk.id];
         if (v != null) buckets[sk.id].push(v);
       });
+      VOCAL_PARTS.forEach(function (part) {
+        var pv = derived.subs && derived.subs[part.id];
+        if (pv != null) partBuckets[part.id].push(pv);
+      });
     });
     var summary = SKILLS.map(function (sk) {
       var vals = buckets[sk.id];
       var avg = vals.length ? mean(vals) : null;
-      return {
+      var row = {
         id: sk.id,
         label: sk.label,
         hint: sk.hint,
@@ -454,6 +683,23 @@
         tier: tierFromScore(avg),
         samples: vals.length,
       };
+      if (sk.id === "vocal") {
+        row.parts = VOCAL_PARTS.map(function (part) {
+          var pvals = partBuckets[part.id];
+          var pavg = pvals.length ? mean(pvals) : null;
+          return {
+            id: part.id,
+            label: part.label,
+            hint: part.hint,
+            why: part.why,
+            sources: part.sources,
+            avg: pavg,
+            tier: tierFromScore(pavg),
+            samples: pvals.length,
+          };
+        });
+      }
+      return row;
     });
     return {
       timeline: timeline,
@@ -635,7 +881,8 @@
       "two-min": ctx.audioDayCount >= 1,
       "commute-week": ctx.audioWindow >= 4,
       framework: !!done["three-two-one"],
-      "white-space": !!done["pause-restart"],
+      "white-space":
+        ctx.pauseRestartClean != null ? !!ctx.pauseRestartClean : !!done["pause-restart"],
       "full-stop": !!done["land-it"],
       "install-21": ctx.practiceDayCount >= 21,
       "pretty-good": ctx.tiers.indexOf("pretty good") !== -1 || ctx.tiers.indexOf("natural") !== -1,
@@ -666,6 +913,7 @@
       });
     }
     SKILLS.forEach(push);
+    VOCAL_PARTS.forEach(push);
     CHALLENGES.forEach(push);
     BADGES.forEach(push);
     Object.keys(MECHANICS).forEach(function (key) {
@@ -678,6 +926,7 @@
     STORAGE_KEY: STORAGE_KEY,
     SOURCES: SOURCES,
     SKILLS: SKILLS,
+    VOCAL_PARTS: VOCAL_PARTS,
     CHALLENGES: CHALLENGES,
     MECHANICS: MECHANICS,
     BADGES: BADGES,
@@ -693,6 +942,11 @@
     sessionHasScores: sessionHasScores,
     isAudioOnly: isAudioOnly,
     sessionCountsAsPractice: sessionCountsAsPractice,
+    vocalParts: vocalParts,
+    restartInfo: restartInfo,
+    restartsInWeek: restartsInWeek,
+    whiteSpaceEarned: whiteSpaceEarned,
+    countRestartsInText: countRestartsInText,
     deriveSession: deriveSession,
     aggregate: aggregate,
     loadState: loadState,
