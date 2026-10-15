@@ -1,7 +1,19 @@
 {
-  "generated": "2026-10-01T08:13:20Z",
-  "sessionCount": 2,
+  "generated": "2026-10-15T12:30:00Z",
+  "sessionCount": 3,
   "sessions": [
+    {
+      "slug": "2026-10-14-thesis-short",
+      "title": "14 Oct thesis Short: explain anomaly detection",
+      "date": "2026-10-14",
+      "status": "full",
+      "summary": "2:03 thesis Short filmed while driving. Strength: near-zero fillers and endings that land. One note: open with the thesis line and say each sentence once (5 restarts, incl. a 19-sec loop before the thesis).",
+      "context": "thesis explainer / YouTube Short (filmed while driving)",
+      "video_id": "W0ZMDREXIr8",
+      "focusPreview": [
+        "Open with the thesis line and say each sentence once"
+      ]
+    },
     {
       "slug": "zara-interview-2",
       "title": "Zara interview 2",
