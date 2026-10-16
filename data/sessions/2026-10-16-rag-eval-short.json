@@ -1,0 +1,138 @@
+{
+  "slug": "2026-10-16-rag-eval-short",
+  "title": "16 Oct Short: how would you evaluate a RAG system?",
+  "date": "2026-10-16",
+  "status": "full",
+  "summary": "Full, steady voice all the way through, and a clear define → evaluate → analogy order. The answer is held back by 4 restarts and a fading close.",
+  "context": "GenAI explainer / YouTube Short (filmed while driving)",
+  "video_id": "xQ-2YuwfYUw",
+  "url": "https://youtube.com/shorts/xQ-2YuwfYUw",
+  "analysisHtml": "<h1>16 Oct Short — speaking analysis</h1>\n<p>YouTube Short (2:03), filmed while driving. Prompt: how would you evaluate a RAG system? He stuck to the prompt.</p>\n<h2>Structure</h2><p>Question → definition of RAG (extract context from lots of data based on the prompt) → evaluation (rate answers good or bad and loop the scores back to improve) → reinforcement-learning “effort and reward” analogy → impact → sign-off. Clear order, but no concrete evaluation metrics are named. That is a content gap.</p>\n<h2>Delivery</h2><p>Volume was steady and projected and never faded. That was today's focus, so it's a clear win. Silent pauses, almost no fillers. Endings drop. 4 restarts: 0:02 “How should I evaluate… I evaluate”, 0:34 “one thing you should be concerning… focus”, 1:12 “The system… a effort and reward system”, 1:24 “based on… on this”.</p>\n<h2>Presence</h2><p>Frequent eye contact; the eyes drift during pauses. Calm, moderate energy, with smiles at 0:03 and 1:56.</p>\n<h2>Close</h2><p>Weak closing: “So, that's all I can say about this type of matters.” Land it with a one-line takeaway instead.</p>",
+  "scores": {
+    "layers": {
+      "structure": {
+        "score": 3,
+        "note": "Clear order: question → RAG definition → evaluation loop → effort-and-reward analogy → impact → sign-off. No concrete metrics named (content gap)."
+      },
+      "delivery": {
+        "score": 4,
+        "note": "Steady, projected volume that never fades (today's focus, a clear win). Silent pauses, almost no fillers. Endings drop. Restarts at 0:02, 0:34, 1:12, 1:24."
+      },
+      "authority": {
+        "score": 3,
+        "note": "Full voice and dropping endings sound sure; the restarts and the 'that's all I can say' close undercut it."
+      }
+    },
+    "levels": {
+      "voice": "pretty good",
+      "body": "pretty good",
+      "words": "pretty good"
+    },
+    "volume": 5,
+    "endingPitch": 4,
+    "restarts": 4,
+    "coaching": {
+      "clarity_structure": "Clear define → evaluate → analogy order. Name what you would measure; no concrete metrics were given.",
+      "grammar_syntax": "Repairs happen through restarts ('a effort and reward system', 'based on… on this').",
+      "conciseness_word_choice": "Silent pauses, almost no fillers. Stuck to the prompt.",
+      "emotional_resonance": "Calm, moderate energy; smiles at 0:03 and 1:56.",
+      "tone_presence": "Volume steady and projected all the way through; endings drop.",
+      "audience_connection": "Frequent eye contact; eyes drift in pauses. Weak close: 'So, that's all I can say about this type of matters.'"
+    },
+    "top_fixes": [
+      {
+        "rank": 1,
+        "fix": "Land the ending with a one-line takeaway",
+        "problem": "Closes on 'So, that's all I can say about this type of matters.' The answer fades instead of landing.",
+        "instead": "Say: 'So: score every answer, feed the scores back, and the system gets better.'",
+        "drill": "Say the closing line three times, with the pitch dropping on 'better'."
+      }
+    ]
+  },
+  "top_fixes": [
+    {
+      "rank": 1,
+      "fix": "Land the ending with a one-line takeaway",
+      "problem": "Closes on 'So, that's all I can say about this type of matters.' The answer fades instead of landing.",
+      "instead": "Say: 'So: score every answer, feed the scores back, and the system gets better.'",
+      "drill": "Say the closing line three times, with the pitch dropping on 'better'."
+    }
+  ],
+  "focus_next": [
+    {
+      "title": "Land the ending with a one-line takeaway",
+      "why": "The answer closes on 'that's all I can say' instead of a point.",
+      "drill": "Say 'So: score every answer, feed the scores back, and the system gets better.' three times, pitch dropping on 'better'.",
+      "concepts": [
+        "land-it",
+        "five-vocal-foundations"
+      ]
+    }
+  ],
+  "transcript": {
+    "source": "Auto-transcribed with faster-whisper small.en (VAD on), timestamps in seconds. Light fixes only: 'RAC'/'rock'/'rack' → 'RAG', 'force learning' → 'reinforcement learning'.",
+    "text": "How should I evaluate the RAG system? The RAG system is a question-answer prompt where a lot of data is the input and you need to extract context based on what you ask which is a group of words, so the one thing you should be concerned with, one thing should be focused is how that prompt gives you the feedback while looking for and hate that feedback It's good or bad, and you score every time, give answers every time, so the RAG system can be improved. It's kind of like a reinforcement learning system to offer one system that can be measured based on this. At the end of the day, you can get a actually good RAG system for the problem you are going to see, and that problem can be life-changing for your project. So that's all I can say about this type of manual.",
+    "segments": [
+      {
+        "start": 1.04,
+        "end": 6.04,
+        "text": "How should I evaluate the RAG system?"
+      },
+      {
+        "start": 6.04,
+        "end": 13.04,
+        "text": "The RAG system is a question-answer prompt"
+      },
+      {
+        "start": 13.04,
+        "end": 18.04,
+        "text": "where a lot of data is the input"
+      },
+      {
+        "start": 18.04,
+        "end": 25.04,
+        "text": "and you need to extract context based on what you ask"
+      },
+      {
+        "start": 25.04,
+        "end": 38.48,
+        "text": "which is a group of words, so the one thing you should be concerned with, one thing should"
+      },
+      {
+        "start": 38.48,
+        "end": 54.35,
+        "text": "be focused is how that prompt gives you the feedback while looking for and hate that feedback"
+      },
+      {
+        "start": 54.35,
+        "end": 65.79,
+        "text": "It's good or bad, and you score every time, give answers every time, so the RAG system"
+      },
+      {
+        "start": 65.79,
+        "end": 66.79,
+        "text": "can be improved."
+      },
+      {
+        "start": 66.79,
+        "end": 84.66,
+        "text": "It's kind of like a reinforcement learning system to offer one system that can be measured based"
+      },
+      {
+        "start": 84.66,
+        "end": 85.66,
+        "text": "on this."
+      },
+      {
+        "start": 85.66,
+        "end": 111.87,
+        "text": "At the end of the day, you can get a actually good RAG system for the problem you are going to see, and that problem can be life-changing for your project."
+      },
+      {
+        "start": 111.87,
+        "end": 121.43,
+        "text": "So that's all I can say about this type of manual."
+      }
+    ]
+  }
+}

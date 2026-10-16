@@ -1,7 +1,19 @@
 {
-  "generated": "2026-10-15T12:30:00Z",
-  "sessionCount": 3,
+  "generated": "2026-10-16T19:50:00Z",
+  "sessionCount": 4,
   "sessions": [
+    {
+      "slug": "2026-10-16-rag-eval-short",
+      "title": "16 Oct Short: how would you evaluate a RAG system?",
+      "date": "2026-10-16",
+      "status": "full",
+      "summary": "Full, steady voice all the way through, and a clear define → evaluate → analogy order. The answer is held back by 4 restarts and a fading close.",
+      "context": "GenAI explainer / YouTube Short (filmed while driving)",
+      "video_id": "xQ-2YuwfYUw",
+      "focusPreview": [
+        "Land the ending with a one-line takeaway"
+      ]
+    },
     {
       "slug": "2026-10-14-thesis-short",
       "title": "14 Oct thesis Short: explain anomaly detection",
