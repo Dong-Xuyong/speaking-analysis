@@ -865,6 +865,19 @@
   }
 
   let repsCache = null;
+  let voiceShowOpen = false;
+  document.addEventListener("click", (e) => {
+    const done = e.target.closest("[data-rep-done]");
+    const undo = e.target.closest("[data-rep-undo]");
+    if (!done && !undo) return;
+    const key = "speaking-done:" + (done || undo).getAttribute(done ? "data-rep-done" : "data-rep-undo");
+    try {
+      if (done) { localStorage.setItem(key, "1"); voiceShowOpen = false; }
+      else if (localStorage.getItem(key) === "1") localStorage.removeItem(key);
+      else voiceShowOpen = true;
+    } catch (err) {}
+    renderVoiceOfDay();
+  });
   async function renderVoiceOfDay() {
     const box = document.getElementById("voice-of-day");
     if (!box) return;
@@ -881,11 +894,20 @@
       const el = document.getElementById("voice-of-day");
       if (!el) return;
       if (!rep) { el.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">No rep yet</p>`; return; }
+      const doneKey = "speaking-done:" + rep.date;
+      let manual = false;
+      try { manual = localStorage.getItem(doneKey) === "1"; } catch (e) {}
+      const auto = rep.done === true || (catalogCache && (catalogCache.sessions || []).some((x) => x.date === rep.date));
+      if ((manual || auto) && !voiceShowOpen) {
+        el.innerHTML = `<p class="rep-done-line">Today's rep done ✓ <button type="button" class="mini-btn" data-rep-undo="${escapeHtml(rep.date)}">${manual ? "Undo" : "Show"}</button></p>`;
+        return;
+      }
       el.innerHTML = `<h2 class="mini-head">Voice of the day</h2>
         <p class="latest-title">${escapeHtml(rep.title)}</p>
         <p class="rep-meta">Focus: ${escapeHtml(rep.focus)}</p>
         <audio controls preload="metadata" src="${escapeHtml(rep.audio)}"></audio>
-        ${text ? `<details class="fold"><summary>Transcript</summary><p class="rep-transcript">${escapeHtml(text)}</p></details>` : ""}`;
+        ${text ? `<details class="fold"><summary>Transcript</summary><p class="rep-transcript">${escapeHtml(text)}</p></details>` : ""}
+        ${manual || auto ? "" : `<button type="button" class="mini-btn" data-rep-done="${escapeHtml(rep.date)}">Done ✓</button>`}`;
     } catch (e) {
       box.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">Could not load reps.</p>`;
     }

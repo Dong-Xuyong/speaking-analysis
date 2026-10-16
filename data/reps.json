@@ -5,7 +5,8 @@
     "focus": "Volume",
     "note": "Practice prompt (edge-tts, en-US-AndrewNeural).",
     "audio": "audio/2026-10-16-rag-eval.mp3",
-    "transcript": "audio/2026-10-16-rag-eval.txt"
+    "transcript": "audio/2026-10-16-rag-eval.txt",
+    "done": true
   },
   {
     "date": "2026-10-15",
