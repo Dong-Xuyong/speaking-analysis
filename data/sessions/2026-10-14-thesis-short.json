@@ -71,5 +71,46 @@
         "five-vocal-foundations"
       ]
     }
-  ]
+  ],
+  "transcript": {
+    "source": "Auto-transcribed with faster-whisper small.en (VAD on), timestamps in seconds. Light fixes only: 'a normal' → 'anomaly', 'mathematical'/'because' evolution → 'grammatical evolution'.",
+    "text": "What is anomaly detection? Anomaly detection is a field where you need to find anomaly in the time stamp which presents a super inference where the point don't go too much longer. In the time series, there is an in-distribution at point which has to stand out from that. So that presents what anomaly generation is. and what my thesis focus is to see through what my thesis focus is to generate a structure where it's easier to detect the anomaly through grammatical evolution. In order to grammatical evolution uses a lot of syntax that can be measured.",
+    "segments": [
+      {
+        "start": 4.24,
+        "end": 18.15,
+        "text": "What is anomaly detection? Anomaly detection is a field where you need to find anomaly in the time stamp"
+      },
+      {
+        "start": 18.15,
+        "end": 31.15,
+        "text": "which presents a super inference where the point don't go too much longer."
+      },
+      {
+        "start": 31.15,
+        "end": 58.46,
+        "text": "In the time series, there is an in-distribution at point which has to stand out from that."
+      },
+      {
+        "start": 58.46,
+        "end": 63.46,
+        "text": "So that presents what anomaly generation is."
+      },
+      {
+        "start": 63.46,
+        "end": 87.51,
+        "text": "and what my thesis focus is to see through what my thesis focus is to generate a structure"
+      },
+      {
+        "start": 88.63,
+        "end": 101.45,
+        "text": "where it's easier to detect the anomaly through grammatical evolution. In order to"
+      },
+      {
+        "start": 101.45,
+        "end": 109.98,
+        "text": "grammatical evolution uses a lot of syntax that can be measured."
+      }
+    ]
+  }
 }

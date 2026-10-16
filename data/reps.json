@@ -1,5 +1,21 @@
 [
   {
+    "date": "2026-10-16",
+    "title": "16 Oct drive-rep prompt — GenAI: how would you evaluate a RAG system?",
+    "focus": "Volume",
+    "note": "Practice prompt (edge-tts, en-US-AndrewNeural).",
+    "audio": "audio/2026-10-16-rag-eval.mp3",
+    "transcript": "audio/2026-10-16-rag-eval.txt"
+  },
+  {
+    "date": "2026-10-15",
+    "title": "15 Oct drive-rep prompt — Everyday: your perfect Sunday morning",
+    "focus": "No 'like' / 'so'",
+    "note": "Practice prompt (edge-tts, en-US-AndrewNeural).",
+    "audio": "audio/2026-10-15-sunday-morning.mp3",
+    "transcript": "audio/2026-10-15-sunday-morning.txt"
+  },
+  {
     "date": "2026-10-14",
     "title": "14 Oct drive-rep prompt — MEGSI thesis: time-series anomaly detection",
     "focus": "Pause instead of restarting",

@@ -279,7 +279,7 @@
     return `
       <div class="video-embed">
         <iframe
-          src="https://www.youtube.com/embed/${escapeHtml(videoId)}"
+          src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}"
           title="Speaking sample"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
@@ -827,150 +827,265 @@
     const { sessions } = catalogStats(catalog);
     updateHeaderMeta("");
     root.classList.remove("is-detail");
-
-    const q = (query || "").trim().toLowerCase();
-    const filtered = q
-      ? sessions.filter((s) => {
-          const hay = [s.title, s.context, s.summary, s.slug, s.date, s.status]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-          return hay.includes(q);
-        })
-      : sessions;
-
-    const sorted = [...filtered].sort((a, b) =>
-      String(b.date || "").localeCompare(String(a.date || ""))
-    );
-
-    const hero = renderHero(
-      catalog,
-      "Interview and talk samples, skill levels, and a two-minute driving practice streak."
-    );
-
-    const coach = renderCoach(loadedSessions);
-    const scrollY = window.scrollY;
-    const hadSearchFocus =
-      document.activeElement && document.activeElement.id === "catalog-search";
-
-    if (sessions.length === 0) {
-      root.innerHTML = `
-        ${hero}
-        ${coach}
-        <div class="empty-archive">
-          <span class="eyebrow">Sessions</span>
-          <h2>No sessions yet</h2>
-          <p>Run <code>python scripts/sync_speaking_analysis.py</code> after adding a session.</p>
-        </div>
-      `;
-      if (scrollY) window.scrollTo(0, scrollY);
-      return;
+    const sorted = [...sessions].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    const latest = sorted[0];
+    const older = sorted.slice(1);
+    let latestHtml = "";
+    if (latest) {
+      const full = loadedSessions.find((x) => x.slug === latest.slug) || latest;
+      const r = loadRating(latest.slug);
+      const avg = ratingAvg(r);
+      const derived = coachApi() && !full._detailMissing ? coachApi().deriveSession(full) : null;
+      const media = latest.video_id
+        ? youtubeEmbed(latest.video_id)
+        : full.url ? `<p><a href="${escapeHtml(full.url)}" target="_blank" rel="noopener">Open video</a></p>` : "";
+      latestHtml = `<section class="ui-card home-card">
+          <h2 class="mini-head">Latest video</h2>
+          ${media}
+          <p class="latest-title"><a href="#/session/${encodeURIComponent(latest.slug)}">${escapeHtml(latest.title || latest.slug)}</a> <span class="report-card-meta">${escapeHtml(shortDate(latest.date))}</span></p>
+          <details class="fold rate-fold"${avg == null ? " open" : ""}><summary data-rated-badge="${escapeHtml(latest.slug)}">${avg != null ? `Rated ✓ avg ${avg.toFixed(1)}` : "Rate this"}</summary>
+            ${renderRatingPanel(latest.slug, derived)}
+          </details>
+        </section>`;
     }
-
-    const cards = sorted
-      .map((s) => {
-        const focus0 =
-          Array.isArray(s.focusPreview) && s.focusPreview[0]
-            ? `<p class="summary">Next: ${escapeHtml(s.focusPreview[0])}</p>`
-            : s.summary
-              ? `<p class="summary">${escapeHtml(s.summary)}</p>`
-              : "";
-        return `
-        <li>
-          <a class="ui-card report-card" href="#/session/${encodeURIComponent(s.slug)}">
-            <div class="report-card-top">
-              <span class="report-card-meta">${escapeHtml(formatDate(s.date))}</span>
-              ${statusBadge(s.status)}
-            </div>
-            <h2>${escapeHtml(s.title || s.slug)}</h2>
-            ${s.context ? `<p class="topic">${escapeHtml(s.context)}</p>` : ""}
-            ${focus0}
-          </a>
-        </li>`;
-      })
-      .join("");
-
+    const list = older.length
+      ? `<section class="home-list"><h2 class="mini-head">Older sessions</h2><ul class="compact-list">${older
+          .map((s) => {
+            const a = ratingAvg(loadRating(s.slug));
+            return `<li><a href="#/session/${encodeURIComponent(s.slug)}"><span class="report-card-meta">${escapeHtml(shortDate(s.date))}</span> ${escapeHtml(s.title || s.slug)}${a != null ? ` <span class="rate-coach">✓ ${a.toFixed(1)}</span>` : ""}</a></li>`;
+          })
+          .join("")}</ul></section>`
+      : "";
     root.innerHTML = `
-      ${hero}
-      ${coach}
-      <div class="section-heading sessions-heading">
-        <div>
-          <span class="eyebrow">Archive</span>
-          <h2>Sessions</h2>
-        </div>
-      </div>
-      <div class="search-row">
-        <input
-          type="search"
-          class="search-input"
-          id="catalog-search"
-          placeholder="Search title, context, summary…"
-          value="${escapeHtml(query || "")}"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <span class="filter-chip" id="result-count">${sorted.length} / ${sessions.length}</span>
-      </div>
-      ${
-        sorted.length === 0
-          ? `<p class="no-results">No sessions match “${escapeHtml(query)}”.</p>`
-          : `<ul class="report-list">${cards}</ul>`
-      }
+      ${latestHtml || `<p class="chart-note">No sessions yet</p>`}
+      <section class="ui-card home-card" id="voice-of-day"><h2 class="mini-head">Voice of the day</h2><p class="chart-note">Loading…</p></section>
+      ${list}
     `;
+    renderVoiceOfDay();
+  }
 
-    const input = document.getElementById("catalog-search");
-    if (input) {
-      input.addEventListener("input", () => {
-        homeQuery = input.value;
-        renderCatalog(catalog, homeQuery);
-      });
-      if (hadSearchFocus) {
-        input.focus({ preventScroll: true });
-        const caret = input.value.length;
-        input.setSelectionRange(caret, caret);
+  let repsCache = null;
+  async function renderVoiceOfDay() {
+    const box = document.getElementById("voice-of-day");
+    if (!box) return;
+    try {
+      if (!repsCache) {
+        const reps = await fetchJson("data/reps.json");
+        reps.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        const rep = reps[0];
+        let text = "";
+        if (rep && rep.transcript) { try { text = await (await fetch(rep.transcript)).text(); } catch (e) {} }
+        repsCache = { rep, text };
       }
+      const { rep, text } = repsCache;
+      const el = document.getElementById("voice-of-day");
+      if (!el) return;
+      if (!rep) { el.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">No rep yet</p>`; return; }
+      el.innerHTML = `<h2 class="mini-head">Voice of the day</h2>
+        <p class="latest-title">${escapeHtml(rep.title)}</p>
+        <p class="rep-meta">Focus: ${escapeHtml(rep.focus)}</p>
+        <audio controls preload="metadata" src="${escapeHtml(rep.audio)}"></audio>
+        ${text ? `<details class="fold"><summary>Transcript</summary><p class="rep-transcript">${escapeHtml(text)}</p></details>` : ""}`;
+    } catch (e) {
+      box.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">Could not load reps.</p>`;
     }
-    if (scrollY) window.scrollTo(0, scrollY);
   }
 
   function renderSession(session) {
-    updateHeaderMeta(session.context || session.date || "");
+    updateHeaderMeta(session.date ? formatDate(session.date) : "");
     root.classList.add("is-detail");
-    const hint = overallHint(session);
+    const fix = (session.top_fixes || session.scores?.top_fixes || [])[0];
+    const focus = (session.focus_next || session.scores?.focus_next || [])[0];
+    const nextFix = fix ? fix.fix : focus ? focus.title : "";
+    const nextHow = fix ? fix.instead || fix.drill : focus ? focus.why : "";
+    const derived = coachApi() ? coachApi().deriveSession(session) : null;
 
     root.innerHTML = `
       <a class="back-link" href="#/">← All sessions</a>
-      <article class="report-view">
-        <header class="report-hero">
-          ${youtubeEmbed(session.video_id)}
-          <span class="eyebrow">${escapeHtml(session.context || "Speaking session")}</span>
-          <div class="report-kicker">
-            ${statusBadge(session.status)}
-            <span class="date">${escapeHtml(formatDate(session.date))}</span>
-            ${session.context ? `<span class="topic-label">${escapeHtml(session.context)}</span>` : ""}
-            ${hint ? `<span class="topic-label">${escapeHtml(hint)}</span>` : ""}
-          </div>
+      <article class="report-view clean-session">
+        <header class="clean-head">
+          <span class="report-card-meta">${escapeHtml(formatDate(session.date))}</span>
           <h1>${escapeHtml(session.title || session.slug)}</h1>
-          ${session.summary ? `<p class="report-lede">${escapeHtml(session.summary)}</p>` : ""}
-          ${
-            session.url
-              ? `<p class="video-link"><a href="${escapeHtml(session.url)}" rel="noopener" target="_blank">Open on YouTube</a></p>`
-              : ""
-          }
         </header>
-
-        ${renderScores(session.scores)}
-        ${renderSessionSkills(session)}
-        ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
-        ${renderFocus(session.focus_next || session.scores?.focus_next)}
-
-        <section class="synthesis">
-          ${sectionHead("Analysis", "Full coaching notes")}
+        ${renderRatingPanel(session.slug, derived)}
+        ${session.summary ? `<section class="clean-block"><h2 class="mini-head">Summary</h2><p class="clamp-3">${escapeHtml(session.summary)}</p></section>` : ""}
+        ${nextFix ? `<section class="clean-block next-fix"><h2 class="mini-head">Next fix</h2><p class="next-fix-title">${escapeHtml(nextFix)}</p>${nextHow ? `<p class="chart-note">${escapeHtml(nextHow)}</p>` : ""}</section>` : ""}
+        ${session.video_id ? `<details class="fold"><summary>Video</summary>${youtubeEmbed(session.video_id)}</details>` : session.url ? `<p class="video-link"><a href="${escapeHtml(session.url)}" rel="noopener" target="_blank">Open video</a></p>` : ""}
+        ${renderTranscript(session.transcript)}
+        <details class="fold"><summary>Coach analysis</summary>
           <div class="synthesis-body">${session.analysisHtml || "<p>No analysis available.</p>"}</div>
-        </section>
+          ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
+        </details>
+        <details class="fold"><summary>Score breakdown</summary>
+          ${renderScores(session.scores)}
+          ${renderSessionSkills(session)}
+        </details>
       </article>
     `;
   }
+
+  /* ---------- Transcript ---------- */
+  function fmtTime(sec) {
+    const t = Math.max(0, Math.floor(Number(sec) || 0));
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+  }
+
+  function renderTranscript(tr) {
+    let segs = [];
+    let text = "";
+    if (typeof tr === "string") text = tr;
+    else if (tr && typeof tr === "object") {
+      segs = Array.isArray(tr.segments) ? tr.segments : [];
+      text = tr.text || segs.map((x) => x.text).join(" ");
+    }
+    if (!text.trim() && !segs.length) {
+      return `<details class="fold"><summary>Transcript</summary><p class="chart-note">No transcript yet</p></details>`;
+    }
+    const body = segs.length
+      ? `<ol class="transcript-segs">${segs
+          .map((x) => `<li><span class="ts">${fmtTime(x.start)}</span> ${escapeHtml(x.text)}</li>`)
+          .join("")}</ol>`
+      : `<p class="rep-transcript">${escapeHtml(text)}</p>`;
+    const meta = tr && tr.source ? `<p class="chart-note">${escapeHtml(tr.source)}</p>` : "";
+    return `<details class="fold"><summary>Transcript</summary>${body}${meta}</details>`;
+  }
+
+  /* ---------- Self-rating (localStorage only, this device) ---------- */
+  const RATING_PREFIX = "speaking-self-rating:";
+  const RATING_SKILLS = [
+    { id: "structure", label: "Structure", coach: "structure" },
+    { id: "clarity", label: "Clarity", coach: "clarity" },
+    { id: "pace", label: "Pace", coach: "pace" },
+    { id: "fillers", label: "Filler words", coach: "fillers" },
+    { id: "confidence", label: "Confidence & eye contact", coach: null },
+    { id: "energy", label: "Energy", coach: null },
+  ];
+
+  function loadRating(slug) {
+    try {
+      const v = JSON.parse(localStorage.getItem(RATING_PREFIX + slug) || "null");
+      return v && typeof v === "object" ? v : { scores: {}, note: "" };
+    } catch (e) {
+      return { scores: {}, note: "" };
+    }
+  }
+
+  function saveRating(slug, r) {
+    r.updated = new Date().toISOString();
+    localStorage.setItem(RATING_PREFIX + slug, JSON.stringify(r));
+  }
+
+  function ratingAvg(r) {
+    const vals = Object.values((r && r.scores) || {}).filter((n) => n >= 1 && n <= 5);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }
+
+  function renderRatingPanel(slug, derived) {
+    const r = loadRating(slug);
+    const avg = ratingAvg(r);
+    const coachSkills = (derived && derived.scored && derived.skills) || {};
+    const rows = RATING_SKILLS.map((sk) => {
+      const mine = r.scores[sk.id] || 0;
+      const coach = sk.coach ? coachSkills[sk.coach] : null;
+      const btns = [1, 2, 3, 4, 5]
+        .map(
+          (n) =>
+            `<button type="button" class="star${n <= mine ? " on" : ""}" data-rate="${sk.id}" data-val="${n}" data-slug="${escapeHtml(slug)}" aria-label="${escapeHtml(sk.label)} ${n} of 5" aria-pressed="${n === mine}">★</button>`
+        )
+        .join("");
+      return `<div class="rate-row">
+          <span class="rate-label">${escapeHtml(sk.label)}</span>
+          <span class="stars" role="group" aria-label="${escapeHtml(sk.label)}">${btns}</span>
+          <span class="rate-coach">${coach != null ? `coach ${formatScore(coach)}` : ""}</span>
+        </div>`;
+    }).join("");
+    return `<section class="clean-block rating-panel" data-rating-slug="${escapeHtml(slug)}">
+        <div class="rate-head">
+          <h2 class="mini-head">My rating</h2>
+          <span class="rate-avg">${avg != null ? `avg ${avg.toFixed(1)}` : "not rated"}</span>
+        </div>
+        <div class="rate-grid">${rows}</div>
+        <textarea class="rate-note" data-rate-note="${escapeHtml(slug)}" rows="2" placeholder="Optional note">${escapeHtml(r.note || "")}</textarea>
+        <div class="rate-actions">
+          <button type="button" class="mini-btn" data-rate-export>Export JSON</button>
+          <label class="mini-btn">Import JSON<input type="file" accept="application/json,.json" data-rate-import hidden /></label>
+        </div>
+      </section>`;
+  }
+
+  function refreshRatingPanel(slug) {
+    const panel = document.querySelector(`.rating-panel[data-rating-slug="${CSS.escape(slug)}"]`);
+    if (!panel) return;
+    const session = detailCache.get(slug);
+    const derived = session && coachApi() ? coachApi().deriveSession(session) : null;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = renderRatingPanel(slug, derived);
+    panel.replaceWith(tmp.firstElementChild);
+  }
+
+  function exportRatings() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(RATING_PREFIX)) {
+        try { out[k.slice(RATING_PREFIX.length)] = JSON.parse(localStorage.getItem(k)); } catch (e) {}
+      }
+    }
+    const blob = new Blob([JSON.stringify({ v: 1, exported: new Date().toISOString(), ratings: out }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `speaking-self-ratings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function importRatings(file) {
+    file.text().then((txt) => {
+      const data = JSON.parse(txt);
+      const ratings = (data && data.ratings) || data || {};
+      let n = 0;
+      Object.keys(ratings).forEach((slug) => {
+        const r = ratings[slug];
+        if (r && typeof r === "object" && r.scores) {
+          localStorage.setItem(RATING_PREFIX + slug, JSON.stringify(r));
+          n++;
+        }
+      });
+      alert(`Imported ${n} rating${n === 1 ? "" : "s"}.`);
+      route();
+    }).catch(() => alert("Could not read that JSON file."));
+  }
+
+  document.addEventListener("click", (e) => {
+    const star = e.target.closest("[data-rate]");
+    if (star) {
+      const slug = star.getAttribute("data-slug");
+      const r = loadRating(slug);
+      const id = star.getAttribute("data-rate");
+      const val = Number(star.getAttribute("data-val"));
+      r.scores = r.scores || {};
+      if (r.scores[id] === val) delete r.scores[id];
+      else r.scores[id] = val;
+      saveRating(slug, r);
+      refreshRatingPanel(slug);
+      const badge = document.querySelector(`[data-rated-badge="${CSS.escape(slug)}"]`);
+      if (badge) { const a = ratingAvg(r); badge.textContent = a != null ? `Rated ✓ avg ${a.toFixed(1)}` : "Rate this"; }
+      return;
+    }
+    if (e.target.closest("[data-rate-export]")) exportRatings();
+  });
+  document.addEventListener("input", (e) => {
+    const t = e.target.closest("[data-rate-note]");
+    if (!t) return;
+    const slug = t.getAttribute("data-rate-note");
+    const r = loadRating(slug);
+    r.note = t.value;
+    saveRating(slug, r);
+  });
+  document.addEventListener("change", (e) => {
+    const f = e.target.closest("[data-rate-import]");
+    if (f && f.files && f.files[0]) importRatings(f.files[0]);
+  });
 
   async function loadAllSessions(catalog) {
     const metas = Array.isArray(catalog.sessions) ? catalog.sessions : [];
