@@ -57,11 +57,11 @@
   }
 
   function setLoading(msg) {
-    root.innerHTML = `<div class="state-panel">${escapeHtml(msg || "Loading…")}</div>`;
+    root.innerHTML = `<div class="state-panel dx-card">${escapeHtml(msg || "Loading…")}</div>`;
   }
 
   function setError(msg) {
-    root.innerHTML = `<div class="state-panel error">${escapeHtml(msg)}</div>`;
+    root.innerHTML = `<div class="state-panel error dx-card">${escapeHtml(msg)}</div>`;
   }
 
   function statusBadge(status) {
@@ -839,7 +839,7 @@
       const media = latest.video_id
         ? youtubeEmbed(latest.video_id)
         : full.url ? `<p><a href="${escapeHtml(full.url)}" target="_blank" rel="noopener">Open video</a></p>` : "";
-      latestHtml = `<section class="ui-card home-card">
+      latestHtml = `<section class="ui-card home-card dx-card">
           <h2 class="mini-head">Latest video</h2>
           ${media}
           <p class="latest-title"><a href="#/session/${encodeURIComponent(latest.slug)}">${escapeHtml(latest.title || latest.slug)}</a> <span class="report-card-meta">${escapeHtml(shortDate(latest.date))}</span></p>
@@ -849,7 +849,7 @@
         </section>`;
     }
     const list = older.length
-      ? `<section class="home-list"><h2 class="mini-head">Older sessions</h2><ul class="compact-list">${older
+      ? `<section class="home-list dx-card"><h2 class="mini-head">Older sessions</h2><ul class="compact-list">${older
           .map((s) => {
             const a = ratingAvg(loadRating(s.slug));
             return `<li><a href="#/session/${encodeURIComponent(s.slug)}"><span class="report-card-meta">${escapeHtml(shortDate(s.date))}</span> ${escapeHtml(s.title || s.slug)}${a != null ? ` <span class="rate-coach">✓ ${a.toFixed(1)}</span>` : ""}</a></li>`;
@@ -857,8 +857,8 @@
           .join("")}</ul></section>`
       : "";
     root.innerHTML = `
-      ${latestHtml || `<p class="chart-note">No sessions yet</p>`}
-      <section class="ui-card home-card" id="voice-of-day"><h2 class="mini-head">Voice of the day</h2><p class="chart-note">Loading…</p></section>
+      ${latestHtml || `<p class="chart-note dx-on-bg">No sessions yet</p>`}
+      <section class="ui-card home-card dx-card" id="voice-of-day"><h2 class="mini-head">Voice of the day</h2><p class="chart-note">Loading…</p></section>
       ${list}
     `;
     renderVoiceOfDay();
@@ -901,22 +901,22 @@
     const derived = coachApi() ? coachApi().deriveSession(session) : null;
 
     root.innerHTML = `
-      <a class="back-link" href="#/">← All sessions</a>
+      <a class="back-link dx-on-bg" href="#/">← All sessions</a>
       <article class="report-view clean-session">
-        <header class="clean-head">
+        <header class="clean-head dx-card">
           <span class="report-card-meta">${escapeHtml(formatDate(session.date))}</span>
           <h1>${escapeHtml(session.title || session.slug)}</h1>
         </header>
         ${renderRatingPanel(session.slug, derived)}
-        ${session.summary ? `<section class="clean-block"><h2 class="mini-head">Summary</h2><p class="clamp-3">${escapeHtml(session.summary)}</p></section>` : ""}
-        ${nextFix ? `<section class="clean-block next-fix"><h2 class="mini-head">Next fix</h2><p class="next-fix-title">${escapeHtml(nextFix)}</p>${nextHow ? `<p class="chart-note">${escapeHtml(nextHow)}</p>` : ""}</section>` : ""}
-        ${session.video_id ? `<details class="fold"><summary>Video</summary>${youtubeEmbed(session.video_id)}</details>` : session.url ? `<p class="video-link"><a href="${escapeHtml(session.url)}" rel="noopener" target="_blank">Open video</a></p>` : ""}
+        ${session.summary ? `<section class="clean-block dx-card"><h2 class="mini-head">Summary</h2><p class="clamp-3">${escapeHtml(session.summary)}</p></section>` : ""}
+        ${nextFix ? `<section class="clean-block next-fix dx-card"><h2 class="mini-head">Next fix</h2><p class="next-fix-title">${escapeHtml(nextFix)}</p>${nextHow ? `<p class="chart-note">${escapeHtml(nextHow)}</p>` : ""}</section>` : ""}
+        ${session.video_id ? `<details class="fold dx-card"><summary>Video</summary>${youtubeEmbed(session.video_id)}</details>` : session.url ? `<p class="video-link dx-on-bg"><a href="${escapeHtml(session.url)}" rel="noopener" target="_blank">Open video</a></p>` : ""}
         ${renderTranscript(session.transcript)}
-        <details class="fold"><summary>Coach analysis</summary>
+        <details class="fold dx-card"><summary>Coach analysis</summary>
           <div class="synthesis-body">${session.analysisHtml || "<p>No analysis available.</p>"}</div>
           ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
         </details>
-        <details class="fold"><summary>Score breakdown</summary>
+        <details class="fold dx-card"><summary>Score breakdown</summary>
           ${renderScores(session.scores)}
           ${renderSessionSkills(session)}
         </details>
@@ -939,7 +939,7 @@
       text = tr.text || segs.map((x) => x.text).join(" ");
     }
     if (!text.trim() && !segs.length) {
-      return `<details class="fold"><summary>Transcript</summary><p class="chart-note">No transcript yet</p></details>`;
+      return `<details class="fold dx-card"><summary>Transcript</summary><p class="chart-note">No transcript yet</p></details>`;
     }
     const body = segs.length
       ? `<ol class="transcript-segs">${segs
@@ -947,7 +947,7 @@
           .join("")}</ol>`
       : `<p class="rep-transcript">${escapeHtml(text)}</p>`;
     const meta = tr && tr.source ? `<p class="chart-note">${escapeHtml(tr.source)}</p>` : "";
-    return `<details class="fold"><summary>Transcript</summary>${body}${meta}</details>`;
+    return `<details class="fold dx-card"><summary>Transcript</summary>${body}${meta}</details>`;
   }
 
   /* ---------- Self-rating (localStorage only, this device) ---------- */
@@ -999,7 +999,7 @@
           <span class="rate-coach">${coach != null ? `coach ${formatScore(coach)}` : ""}</span>
         </div>`;
     }).join("");
-    return `<section class="clean-block rating-panel" data-rating-slug="${escapeHtml(slug)}">
+    return `<section class="clean-block rating-panel dx-card" data-rating-slug="${escapeHtml(slug)}">
         <div class="rate-head">
           <h2 class="mini-head">My rating</h2>
           <span class="rate-avg">${avg != null ? `avg ${avg.toFixed(1)}` : "not rated"}</span>
@@ -1007,8 +1007,8 @@
         <div class="rate-grid">${rows}</div>
         <textarea class="rate-note" data-rate-note="${escapeHtml(slug)}" rows="2" placeholder="Optional note">${escapeHtml(r.note || "")}</textarea>
         <div class="rate-actions">
-          <button type="button" class="mini-btn" data-rate-export>Export JSON</button>
-          <label class="mini-btn">Import JSON<input type="file" accept="application/json,.json" data-rate-import hidden /></label>
+          <button type="button" class="mini-btn dx-btn dx-btn--ghost" data-rate-export>Export JSON</button>
+          <label class="mini-btn dx-btn dx-btn--ghost">Import JSON<input type="file" accept="application/json,.json" data-rate-import hidden /></label>
         </div>
       </section>`;
   }
