@@ -1,5 +1,7 @@
 # Speaking Coach Analysis
 
+Part of the Career app (Pipeline at /career/). Shares its suite nav.
+
 GitHub Pages archive of YouTube speaking samples scored against the YouTube wiki public-speaking corpus (Vinh Giang OS: Structure / Delivery / Authority / Communication Levels).
 
 **Live:** https://dong-xuyong.github.io/speaking-analysis/

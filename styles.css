@@ -94,6 +94,15 @@ html.dark .ink-wash {
   flex-direction: column;
 }
 
+/* --border is a hex in this app, so /career/suite.css's hsl(var(--border))
+   border is invalid at computed-value time and clears the edge. A more
+   specific rule restores it and keeps the pill above .ink-wash. */
+#app > nav.suite-nav {
+  position: relative;
+  z-index: 1;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
 a {
   color: var(--teal);
   text-decoration-thickness: 1px;
