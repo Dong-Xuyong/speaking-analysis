@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
@@ -306,9 +306,11 @@ test("restarts are a field, a transcript repeat, or a quoted opening", () => {
   assert.equal(C.restartInfo({}).count, null);
 });
 
-test("archive quotes and a dirty pause week feed the miss count", () => {
+// Session data lives in the private repo Dong-Xuyong/speaking-data. Point SPEAKING_DATA at a clone to run this.
+const SPEAKING_DATA = process.env.SPEAKING_DATA || new URL("../data/", import.meta.url).pathname;
+test("archive quotes and a dirty pause week feed the miss count", { skip: !existsSync(SPEAKING_DATA + "/sessions/zara-interview.json") && "private speaking-data not present" }, () => {
   const sessions = ["zara-interview", "zara-interview-2"].map((slug) =>
-    JSON.parse(readFileSync(new URL(`../data/sessions/${slug}.json`, import.meta.url), "utf8"))
+    JSON.parse(readFileSync(`${SPEAKING_DATA}/sessions/${slug}.json`, "utf8"))
   );
   const bySlug = Object.fromEntries(sessions.map((s) => [s.slug, C.restartInfo(s)]));
   assert.equal(bySlug["zara-interview"].source, "quoted speech in this analysis");
