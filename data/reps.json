@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-10-17",
+    "title": "17 Oct drive-rep prompt — MEGSI thesis: grammatical evolution for anomaly detection",
+    "focus": "Ending pitch",
+    "note": "Practice prompt (edge-tts, en-US-AndrewNeural).",
+    "audio": "audio/2026-10-17-thesis-ge.mp3",
+    "transcript": "audio/2026-10-17-thesis-ge.txt"
+  },
+  {
     "date": "2026-10-16",
     "title": "16 Oct drive-rep prompt — GenAI: how would you evaluate a RAG system?",
     "focus": "Volume",
