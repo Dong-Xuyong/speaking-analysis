@@ -43,11 +43,7 @@
   }
 
   async function fetchJson(path) {
-    const res = await fetch(path, { cache: "no-cache" });
-    if (!res.ok) {
-      throw new Error(`Failed to load ${path} (${res.status})`);
-    }
-    return res.json();
+    return window.PrivateData.json(path);
   }
 
   async function loadCatalog() {
@@ -887,7 +883,7 @@
         reps.sort((a, b) => String(b.date).localeCompare(String(a.date)));
         const rep = reps[0];
         let text = "";
-        if (rep && rep.transcript) { try { text = await (await fetch(rep.transcript)).text(); } catch (e) {} }
+        if (rep && rep.transcript) { try { text = await window.PrivateData.text(rep.transcript); } catch (e) {} }
         repsCache = { rep, text };
       }
       const { rep, text } = repsCache;
@@ -905,11 +901,12 @@
       el.innerHTML = `<h2 class="mini-head">Voice of the day</h2>
         <p class="latest-title">${escapeHtml(rep.title)}</p>
         <p class="rep-meta">Focus: ${escapeHtml(rep.focus)}</p>
-        <audio controls preload="metadata" src="${escapeHtml(rep.audio)}"></audio>
+        <audio controls preload="metadata" data-private-src="${escapeHtml(rep.audio)}"></audio>
         ${text ? `<details class="fold"><summary>Transcript</summary><p class="rep-transcript">${escapeHtml(text)}</p></details>` : ""}
         ${manual || auto ? "" : `<button type="button" class="mini-btn" data-rep-done="${escapeHtml(rep.date)}">Done ✓</button>`}`;
+      window.PrivateData.hydrateAudio(el);
     } catch (e) {
-      box.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">Could not load reps.</p>`;
+      box.innerHTML = `<h2 class="mini-head">Voice of the day</h2><p class="chart-note">${e && e.noAccess ? "Private. Add your sync token to load reps." : "Could not load reps."}</p>`;
     }
   }
 
@@ -1140,8 +1137,12 @@
       loadedSessions = await loadAllSessions(catalog);
       renderCatalog(catalog, homeQuery);
     } catch (err) {
-      console.error(err);
-      setError("Could not load data/index.json. Is the archive synced?");
+      if (err && err.noAccess) {
+        setError("Speaking data is private (repo Dong-Xuyong/speaking-data). Save a sync token that can read it under localStorage key dong-gh-sync, then reload.");
+      } else {
+        console.error(err);
+        setError("Could not load data/index.json. Is the archive synced?");
+      }
       updateHeaderMeta("");
     }
   }
@@ -1154,8 +1155,8 @@
       document.title = `${session.title || slug} · ${APP_NAME}`;
       renderSession(session);
     } catch (err) {
-      console.error(err);
-      setError(`Session “${slug}” not found.`);
+      if (!(err && err.noAccess)) console.error(err);
+      setError(err && err.noAccess ? "Speaking data is private. Add your sync token to view sessions." : `Session “${slug}” not found.`);
       updateHeaderMeta("");
       root.classList.remove("is-detail");
     }
