@@ -1025,10 +1025,6 @@
         </div>
         <div class="rate-grid">${rows}</div>
         <textarea class="rate-note" data-rate-note="${escapeHtml(slug)}" rows="2" placeholder="Optional note">${escapeHtml(r.note || "")}</textarea>
-        <div class="rate-actions">
-          <button type="button" class="mini-btn dx-btn dx-btn--ghost" data-rate-export>Export JSON</button>
-          <label class="mini-btn dx-btn dx-btn--ghost">Import JSON<input type="file" accept="application/json,.json" data-rate-import hidden /></label>
-        </div>
       </section>`;
   }
 
@@ -1040,39 +1036,6 @@
     const tmp = document.createElement("div");
     tmp.innerHTML = renderRatingPanel(slug, derived);
     panel.replaceWith(tmp.firstElementChild);
-  }
-
-  function exportRatings() {
-    const out = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(RATING_PREFIX)) {
-        try { out[k.slice(RATING_PREFIX.length)] = JSON.parse(localStorage.getItem(k)); } catch (e) {}
-      }
-    }
-    const blob = new Blob([JSON.stringify({ v: 1, exported: new Date().toISOString(), ratings: out }, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `speaking-self-ratings-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
-
-  function importRatings(file) {
-    file.text().then((txt) => {
-      const data = JSON.parse(txt);
-      const ratings = (data && data.ratings) || data || {};
-      let n = 0;
-      Object.keys(ratings).forEach((slug) => {
-        const r = ratings[slug];
-        if (r && typeof r === "object" && r.scores) {
-          localStorage.setItem(RATING_PREFIX + slug, JSON.stringify(r));
-          n++;
-        }
-      });
-      alert(`Imported ${n} rating${n === 1 ? "" : "s"}.`);
-      route();
-    }).catch(() => alert("Could not read that JSON file."));
   }
 
   document.addEventListener("click", (e) => {
@@ -1089,9 +1052,7 @@
       refreshRatingPanel(slug);
       const badge = document.querySelector(`[data-rated-badge="${CSS.escape(slug)}"]`);
       if (badge) { const a = ratingAvg(r); badge.textContent = a != null ? `Rated ✓ avg ${a.toFixed(1)}` : "Rate this"; }
-      return;
     }
-    if (e.target.closest("[data-rate-export]")) exportRatings();
   });
   document.addEventListener("input", (e) => {
     const t = e.target.closest("[data-rate-note]");
@@ -1100,10 +1061,6 @@
     const r = loadRating(slug);
     r.note = t.value;
     saveRating(slug, r);
-  });
-  document.addEventListener("change", (e) => {
-    const f = e.target.closest("[data-rate-import]");
-    if (f && f.files && f.files[0]) importRatings(f.files[0]);
   });
 
   async function loadAllSessions(catalog) {
