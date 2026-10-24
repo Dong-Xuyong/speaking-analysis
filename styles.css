@@ -1551,6 +1551,9 @@ html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
 .mini-btn { font: 600 0.85rem/1 var(--dx-font); min-height: 44px; padding: 0 0.9rem; border-radius: var(--dx-radius-sm); border: 1px solid var(--dx-border); background: var(--dx-card); color: var(--dx-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .transcript-segs { list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow: auto; display: grid; gap: 0.35rem; }
 .transcript-segs .ts { font-family: var(--font-mono); font-size: 0.75rem; color: var(--dx-muted); margin-right: 0.4rem; }
+.practice-fixes { margin: 0.15rem 0 0.35rem; padding-left: 1.15rem; display: grid; gap: 0.45rem; }
+.practice-fixes li { line-height: 1.45; }
+.perfect-version { white-space: pre-wrap; line-height: 1.55; }
 .home-card { margin-bottom: 1rem; display: grid; gap: 0.6rem; min-width: 0; }
 .home-card audio { width: 100%; max-width: 100%; }
 .latest-title { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
