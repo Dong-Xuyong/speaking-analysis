@@ -930,7 +930,9 @@
         ${session.summary ? `<section class="clean-block dx-card"><h2 class="mini-head">Summary</h2><p class="clamp-3">${escapeHtml(session.summary)}</p></section>` : ""}
         ${nextFix ? `<section class="clean-block next-fix dx-card"><h2 class="mini-head">Next fix</h2><p class="next-fix-title">${escapeHtml(nextFix)}</p>${nextHow ? `<p class="chart-note">${escapeHtml(nextHow)}</p>` : ""}</section>` : ""}
         ${session.video_id ? `<details class="fold dx-card"><summary>Video</summary>${youtubeEmbed(session.video_id)}</details>` : session.url ? `<p class="video-link dx-on-bg"><a href="${escapeHtml(session.url)}" rel="noopener" target="_blank">Open video</a></p>` : ""}
+        ${renderWhatToFix(session.whatToFix)}
         ${renderTranscript(session.transcript)}
+        ${renderPerfectVersion(session.perfectVersion)}
         <details class="fold dx-card"><summary>Coach analysis</summary>
           <div class="synthesis-body">${session.analysisHtml || "<p>No analysis available.</p>"}</div>
           ${renderTopFixes(session.top_fixes || session.scores?.top_fixes)}
@@ -941,6 +943,28 @@
         </details>
       </article>
     `;
+  }
+
+  /* ---------- Practice folds: What to fix, Transcript, Perfect version ---------- */
+  function fixItems(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean);
+  }
+
+  function renderWhatToFix(value) {
+    const items = fixItems(value);
+    const body = items.length
+      ? `<ul class="practice-fixes">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+      : `<p class="chart-note">Not written yet</p>`;
+    return `<details class="fold dx-card"><summary>What to fix</summary>${body}</details>`;
+  }
+
+  function renderPerfectVersion(value) {
+    const text = typeof value === "string" ? value.trim() : "";
+    const body = text
+      ? `<div class="perfect-version">${escapeHtml(text)}</div>`
+      : `<p class="chart-note">Not written yet</p>`;
+    return `<details class="fold dx-card"><summary>Perfect version</summary>${body}</details>`;
   }
 
   /* ---------- Transcript ---------- */
