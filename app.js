@@ -1049,7 +1049,93 @@
         </div>
         <div class="rate-grid">${rows}</div>
         <textarea class="rate-note" data-rate-note="${escapeHtml(slug)}" rows="2" placeholder="Optional note">${escapeHtml(r.note || "")}</textarea>
+        <div class="rate-actions">
+          <button type="button" class="rate-save" data-rate-save="${escapeHtml(slug)}">Save</button>
+          <div class="rate-secondary">
+            <button type="button" class="rate-ghost" data-rate-export>Export JSON</button>
+            <label class="rate-ghost">Import JSON<input type="file" accept="application/json,.json" data-rate-import /></label>
+          </div>
+        </div>
       </section>`;
+  }
+
+  function updateRatedBadge(slug, r) {
+    const badge = document.querySelector(`[data-rated-badge="${CSS.escape(slug)}"]`);
+    if (!badge) return;
+    const avg = ratingAvg(r);
+    badge.textContent = avg != null ? `Rated ✓ avg ${avg.toFixed(1)}` : "Rate this";
+  }
+
+  function ratingFromPanel(panel, slug) {
+    const r = loadRating(slug);
+    const note = panel && panel.querySelector("[data-rate-note]");
+    if (note) r.note = note.value;
+    const scores = {};
+    panel.querySelectorAll("[data-rate].on").forEach((btn) => {
+      const id = btn.getAttribute("data-rate");
+      const val = Number(btn.getAttribute("data-val"));
+      if (!id || val < 1 || val > 5) return;
+      if (scores[id] == null || val > scores[id]) scores[id] = val;
+    });
+    r.scores = scores;
+    return r;
+  }
+
+  let rateSaveCollapse = 0;
+
+  function confirmRatingSave(btn) {
+    const slug = btn.getAttribute("data-rate-save");
+    const panel = btn.closest(".rating-panel");
+    if (!slug || !panel) return;
+    const r = ratingFromPanel(panel, slug);
+    saveRating(slug, r);
+    const avg = ratingAvg(r);
+    updateRatedBadge(slug, r);
+    const avgEl = panel.querySelector(".rate-avg");
+    if (avgEl) avgEl.textContent = avg != null ? `Rated ✓ avg ${avg.toFixed(1)}` : "not rated";
+    btn.textContent = "Saved";
+    btn.classList.add("is-saved");
+    window.clearTimeout(rateSaveCollapse);
+    const fold = panel.closest("details.rate-fold");
+    if (fold && fold.open && avg != null) {
+      rateSaveCollapse = window.setTimeout(() => {
+        if (!btn.isConnected || !btn.classList.contains("is-saved")) return;
+        fold.open = false;
+      }, 700);
+    }
+  }
+
+  function exportRatings() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(RATING_PREFIX)) {
+        try { out[k.slice(RATING_PREFIX.length)] = JSON.parse(localStorage.getItem(k)); } catch (e) {}
+      }
+    }
+    const blob = new Blob([JSON.stringify({ v: 1, exported: new Date().toISOString(), ratings: out }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `speaking-self-ratings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function importRatings(file) {
+    file.text().then((txt) => {
+      const data = JSON.parse(txt);
+      const ratings = (data && data.ratings) || data || {};
+      let n = 0;
+      Object.keys(ratings).forEach((slug) => {
+        const r = ratings[slug];
+        if (r && typeof r === "object" && r.scores) {
+          localStorage.setItem(RATING_PREFIX + slug, JSON.stringify(r));
+          n++;
+        }
+      });
+      alert(`Imported ${n} rating${n === 1 ? "" : "s"}.`);
+      route();
+    }).catch(() => alert("Could not read that JSON file."));
   }
 
   function refreshRatingPanel(slug) {
@@ -1063,8 +1149,20 @@
   }
 
   document.addEventListener("click", (e) => {
+    const saveBtn = e.target.closest("[data-rate-save]");
+    if (saveBtn) {
+      e.preventDefault();
+      confirmRatingSave(saveBtn);
+      return;
+    }
+    if (e.target.closest("[data-rate-export]")) {
+      e.preventDefault();
+      exportRatings();
+      return;
+    }
     const star = e.target.closest("[data-rate]");
     if (star) {
+      window.clearTimeout(rateSaveCollapse);
       const slug = star.getAttribute("data-slug");
       const r = loadRating(slug);
       const id = star.getAttribute("data-rate");
@@ -1074,8 +1172,7 @@
       else r.scores[id] = val;
       saveRating(slug, r);
       refreshRatingPanel(slug);
-      const badge = document.querySelector(`[data-rated-badge="${CSS.escape(slug)}"]`);
-      if (badge) { const a = ratingAvg(r); badge.textContent = a != null ? `Rated ✓ avg ${a.toFixed(1)}` : "Rate this"; }
+      updateRatedBadge(slug, r);
     }
   });
   document.addEventListener("input", (e) => {
@@ -1085,6 +1182,21 @@
     const r = loadRating(slug);
     r.note = t.value;
     saveRating(slug, r);
+    const panel = t.closest(".rating-panel");
+    const saveBtn = panel && panel.querySelector("[data-rate-save]");
+    if (saveBtn && saveBtn.classList.contains("is-saved")) {
+      window.clearTimeout(rateSaveCollapse);
+      saveBtn.textContent = "Save";
+      saveBtn.classList.remove("is-saved");
+    }
+  });
+  document.addEventListener("change", (e) => {
+    const f = e.target.closest("[data-rate-import]");
+    if (f && f.files && f.files[0]) {
+      const file = f.files[0];
+      f.value = "";
+      importRatings(file);
+    }
   });
 
   async function loadAllSessions(catalog) {
