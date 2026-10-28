@@ -1548,6 +1548,13 @@ html.dark .s-fillerRate { stroke: #f0a598; background: #f0a598; fill: #f0a598; }
 .star.on { color: var(--dx-accent); }
 .rate-coach { font-family: var(--font-mono); font-size: 0.72rem; color: var(--dx-muted); text-align: right; }
 .rate-note { width: 100%; max-width: 100%; box-sizing: border-box; margin-top: 0.5rem; font: inherit; font-size: 0.9rem; padding: 0.45rem 0.6rem; min-height: 44px; border-radius: var(--dx-radius-sm); border: 1px solid var(--dx-border); background: transparent; color: var(--dx-text); resize: vertical; }
+.rate-actions { display: flex; flex-direction: column; align-items: stretch; gap: 0.4rem; margin-top: 0.55rem; }
+.rate-save { width: 100%; min-height: 44px; border-radius: var(--dx-radius-sm); border: 1px solid var(--dx-accent, hsl(var(--primary))); background: var(--dx-accent, hsl(var(--primary))); color: var(--dx-accent-fg, hsl(var(--primary-foreground))); font: 600 0.95rem/1 var(--dx-font, var(--font-sans)); cursor: pointer; }
+.rate-save.is-saved { background: var(--dx-accent-soft, hsl(var(--primary) / 0.16)); color: var(--dx-accent, hsl(var(--primary))); }
+.rate-secondary { display: flex; flex-wrap: wrap; gap: 0.25rem 0.7rem; }
+.rate-ghost { position: relative; display: inline-flex; align-items: center; min-height: 36px; padding: 0 0.15rem; border: 0; background: transparent; color: var(--dx-muted, hsl(var(--muted-foreground))); font: 500 0.8rem/1 var(--dx-font, var(--font-sans)); cursor: pointer; }
+.rate-ghost:hover { color: var(--dx-text, hsl(var(--foreground))); }
+.rate-ghost input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
 .mini-btn { font: 600 0.85rem/1 var(--dx-font); min-height: 44px; padding: 0 0.9rem; border-radius: var(--dx-radius-sm); border: 1px solid var(--dx-border); background: var(--dx-card); color: var(--dx-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .transcript-segs { list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow: auto; display: grid; gap: 0.35rem; }
 .transcript-segs .ts { font-family: var(--font-mono); font-size: 0.75rem; color: var(--dx-muted); margin-right: 0.4rem; }
